@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: evo-mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: evo_commerce
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql-data:/var/lib/mysql
+
+  redis:
+    image: redis:7.2
+    container_name: evo-redis
+    ports:
+      - "6379:6379"
+
+  rabbitmq:
+    image: rabbitmq:3.13-management
+    container_name: evo-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+
+  app:
+    build: .
+    container_name: evo-app
+    cap_add:
+      - SYS_PTRACE
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/evo_commerce
+      SPRING_DATASOURCE_USERNAME: root
+      SPRING_DATASOURCE_PASSWORD: root1234
+    depends_on:
+      - mysql
+      - redis
+      - rabbitmq
+
+volumes:
+  mysql-data:
