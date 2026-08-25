@@ -37,10 +37,14 @@ Caused by: java.net.ConnectException: Connection refused
 - "컨테이너 프로세스 시작"과 "해당 프로세스의 요청 처리 준비 완료"는 서로 다른 시점이다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 완료 후 작성 예정)
+- Docker Compose의 `depends_on` (조건 없는 리스트 형태)은 컨테이너 시작 순서만 보장하고, 컨테이너 내부 프로세스의 요청 처리 준비 상태는 보장하지 않는다.
+- MySQL 컨테이너는 프로세스 기동 후에도 InnoDB 초기화 등 부트스트랩 과정을 거치며, 이 시간 동안 3306 포트는 아직 커넥션을 받지 않는다.
+- Spring Boot의 HikariCP는 애플리케이션 컨텍스트 초기화 시점에 즉시 DB 커넥션을 시도하므로, MySQL 부트스트랩이 끝나기 전에 연결을 시도하면 `Connection refused`가 발생한다.
 
 ### 해결 방안
-(해결 완료 후 작성 예정)
+- 대안 1: 애플리케이션 레벨 재시도 (HikariCP `initializationFailTimeout`, 커넥션 재시도 로직) — 코드/설정 변경만으로 해결 가능하지만 재시도 횟수·간격을 잘못 설정하면 컨테이너 기동 자체가 실패로 처리될 수 있고, 인프라 문제를 애플리케이션 책임으로 떠넘기는 방식이다.
+- 대안 2 (채택): `mysql` 서비스에 `healthcheck`(`mysqladmin ping`)를 추가하고, `app`의 `depends_on`을 `condition: service_healthy`로 지정. 인프라 레벨에서 "실제로 요청을 받을 수 있는 상태"를 명시적으로 검증하므로 재현 조건 자체를 제거한다.
+- 최종 적용: `docker-compose.yml`의 `mysql.healthcheck` 및 `app.depends_on.mysql.condition: service_healthy` 설정.
