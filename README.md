@@ -22,6 +22,6 @@ docker-compose up -d
 
 | ID | 카테고리 | 설명 | 상태 | 문서 |
 |----|----------|------|------|------|
-| ISSUE-01 | Infra/Docker | MySQL 컨테이너 준비 상태 미확인으로 인한 앱 커넥션 실패 | CLOSED | [링크](issues/ISSUE-01_mysql_startup_race_condition.md) |
+| ISSUE-01 | Infra/Docker | MySQL 컨테이너 준비 상태 미확인으로 인한 앱 커넥션 실패 | OPEN | [링크](issues/ISSUE-01_mysql_startup_race_condition.md) |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
