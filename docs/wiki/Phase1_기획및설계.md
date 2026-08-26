@@ -1,7 +1,7 @@
-# Phase 1 기획 및 설계: ERD와 User/Product 도메인
+# User/Product 도메인 설계와 ERD
 
 ## 개요
-Phase 1에서 구현할 User, Product 두 도메인의 ERD와 엔티티 설계를 정리한다. 인증(JWT), API 응답 포맷, Swagger 등 계층 설계는 이후 별도 문서에서 다룬다. 이 시점에는 두 도메인 사이에 직접적인 연관관계를 두지 않는다. 주문(Order)이 둘을 연결하는 시점은 Phase 2다.
+User, Product 두 도메인의 ERD와 엔티티 설계를 정리한다. 인증(JWT), API 응답 포맷, Swagger 등 계층 설계는 이후 별도 문서에서 다룬다. 이 시점에는 두 도메인 사이에 직접적인 연관관계를 두지 않는다. 주문(Order) 도메인이 추가되면 그때 두 도메인을 연결하는 연관관계를 설계한다.
 
 ## ERD
 
