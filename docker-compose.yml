@@ -17,19 +17,6 @@ services:
       timeout: 5s
       retries: 10
 
-  redis:
-    image: redis:7.2
-    container_name: evo-redis
-    ports:
-      - "6379:6379"
-
-  rabbitmq:
-    image: rabbitmq:3.13-management
-    container_name: evo-rabbitmq
-    ports:
-      - "5672:5672"
-      - "15672:15672"
-
   app:
     build: .
     container_name: evo-app
@@ -44,10 +31,6 @@ services:
     depends_on:
       mysql:
         condition: service_healthy
-      redis:
-        condition: service_started
-      rabbitmq:
-        condition: service_started
 
 volumes:
   mysql-data:
