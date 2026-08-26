@@ -40,7 +40,7 @@ erDiagram
 | role | TINYINT | `UserRole` Enum, `@Enumerated(EnumType.ORDINAL)`로 매핑 |
 | created_at / updated_at | DATETIME | Auditing 적용 |
 
-이메일 중복 여부는 회원가입 API(Step 1.7)에서 `existsByEmail` 조회로 애플리케이션 레벨에서만 검증한다. DB 유니크 인덱스는 이번 Step 범위에서는 걸지 않았다.
+이메일 중복 여부는 회원가입 API에서 `existsByEmail` 조회로 애플리케이션 레벨에서만 검증한다. DB 유니크 인덱스는 아직 적용하지 않았다.
 
 ## Product 도메인 설계
 
@@ -54,7 +54,7 @@ erDiagram
 | category | VARCHAR(50) | 별도 테이블 없이 문자열로 저장 |
 | created_at / updated_at | DATETIME | Auditing 적용 |
 
-Rich Domain 원칙에 따라 재고 증감은 setter 대신 `increaseStock` / `decreaseStock` 도메인 메서드로 캡슐화한다. 두 메서드 모두 파라미터와 현재 재고값에 대한 단순 조건문 수준의 검증만 수행하며, 동시성 방어(락, 원자적 UPDATE 등)는 Step 1.8 범위에서 의도적으로 적용하지 않는다.
+Rich Domain 원칙에 따라 재고 증감은 setter 대신 `increaseStock` / `decreaseStock` 도메인 메서드로 캡슐화한다. 두 메서드 모두 파라미터와 현재 재고값에 대한 단순 조건문 수준의 검증만 수행하며, 동시성 방어(락, 원자적 UPDATE 등)는 아직 적용하지 않았다.
 
 ## 설계 시 남겨둔 논의 지점
 
