@@ -9,6 +9,7 @@ logs/
 *.mv.db
 *.trace.db
 HELP.md
+abc/
 
 ### JVM Crashes & Profiling Artifacts (Phase 4 & 5) ###
 hs_err_pid*.log
