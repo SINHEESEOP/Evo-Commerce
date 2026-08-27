@@ -36,10 +36,15 @@
 - `e.getMessage()`를 그대로 응답에 담고 있어, 이후 DB/외부 API 연동 코드가 추가되면 내부 예외 메시지가 그대로 클라이언트에 노출될 위험이 있다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 완료 시 작성)
+`ResponseEntity.ok(...)`로 모든 예외를 무조건 `200 OK`로 응답한 것이 근본 원인이다. 예외의 성격(클라이언트 잘못 vs 서버 내부 장애)을 전혀 구분하지 않고 `@ExceptionHandler(Exception.class)` 하나에서 획일적으로 처리했기 때문에, HTTP 상태 코드가 실제 처리 결과와 무관하게 항상 성공을 의미하게 됐다. 또한 `e.getMessage()`를 그대로 응답에 실어, 예외 원문이 클라이언트에 노출되는 정보 노출 위험도 함께 갖고 있었다.
 
 ### 해결 방안
-(해결 완료 시 작성)
+예외를 3단계로 계층화해 각각 별도 핸들러로 분리했다.
+- `MethodArgumentNotValidException` → `400 Bad Request`, 필드별 검증 오류를 조합한 메시지 반환
+- `BusinessException`(`ErrorCode` 보유) → `errorCode.getHttpStatus()`로 상태 코드를 동적으로 매핑
+- 그 외 `Exception` → `500 Internal Server Error`, 클라이언트에는 정제된 고정 메시지만 반환하고 서버 로그에는 `e`를 포함한 전체 스택트레이스를 `ERROR` 레벨로 기록
+
+`4xx`는 `log.warn`으로 한 줄만, `5xx`는 `log.error`로 스택트레이스까지 남겨 로그 레벨과 노출 정보를 분리했다. `ErrorCode`가 상태 코드와 메시지를 스스로 갖게 해, 핸들러가 예외 타입별로 상태 코드를 분기 판단할 필요가 없도록 했다.
