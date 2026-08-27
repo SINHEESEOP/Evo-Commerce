@@ -25,6 +25,7 @@ docker-compose up -d
 | **ISSUE-01** | Infra / Docker | [MySQL 컨테이너 기동 지연으로 인한 앱 커넥션 실패](issues/ISSUE-01_mysql_startup_race_condition.md)                    | `CLOSED` |
 | **ISSUE-02** | Backend / MVC | [전역 예외 처리기가 서버 오류에도 HTTP 200을 반환](issues/ISSUE-02_exception_handler_returns_200_for_server_errors.md) | `CLOSED` |
 | **ISSUE-03** | Testing / Spring | [WebMvcTest의 테스트 내부 정적 컨트롤러 미인식 문제](issues/ISSUE-03_webmvctest_ignores_nested_static_controller.md)   | `CLOSED` |
+| **ISSUE-04** | Backend / API Docs | [Swagger UI와 OpenAPI 문서가 환경 구분 없이 항상 노출됨](issues/ISSUE-04_swagger_ui_exposed_without_environment_restriction.md) | `OPEN` |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
 
