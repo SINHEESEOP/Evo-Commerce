@@ -1,6 +1,5 @@
 package com.evo.commerce.global.exception;
 
-import com.evo.commerce.global.exception.support.ThrowingController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
