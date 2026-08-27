@@ -5,7 +5,7 @@
 ## 기술 스택
 
 - Java 21 (LTS)
-- Spring Boot 3.5.x
+- Spring Boot 3.5.3
 - MySQL 8.0
 - Redis 7.2
 - RabbitMQ 3.13
@@ -23,5 +23,6 @@ docker-compose up -d
 | ID | 카테고리 | 설명 | 상태 | 문서 |
 |----|----------|------|------|------|
 | ISSUE-01 | Infra/Docker | MySQL 컨테이너 준비 상태 미확인으로 인한 앱 커넥션 실패 | CLOSED | [링크](issues/ISSUE-01_mysql_startup_race_condition.md) |
+| ISSUE-02 | Backend/Exception Handling | 전역 예외 처리기가 서버 오류에도 HTTP 200을 응답 | OPEN | [링크](issues/ISSUE-02_exception_handler_returns_200_for_server_errors.md) |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
