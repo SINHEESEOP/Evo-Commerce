@@ -14,12 +14,12 @@
 ### 재현 절차
 1. 저장소에서 `JwtTokenProvider.SECRET_KEY` 값을 그대로 읽는다.
    ```java
-   private static final String SECRET_KEY = "evo-commerce-jwt-secret-key-for-token-signing-2024";
+   private static final String SECRET_KEY = "evo-commerce-jwt-secret-key-for-token-signing-2026";
    ```
 2. 로그인 API 없이, 위 문자열만으로 별도의 jjwt 코드를 작성해 `role=ADMIN`, `subject=999`(존재하지 않는 사용자 ID)인 토큰을 직접 서명해 만든다.
    ```java
    SecretKey key = Keys.hmacShaKeyFor(
-       "evo-commerce-jwt-secret-key-for-token-signing-2024".getBytes());
+       "evo-commerce-jwt-secret-key-for-token-signing-2026".getBytes());
    String forgedToken = Jwts.builder()
        .subject("999")
        .claim("role", "ADMIN")
@@ -41,4 +41,6 @@
 JWT 서명에 쓰는 `SecretKey`를 만들 때, 그 원본 문자열을 `application.yaml` 같은 설정이 아니라 `JwtTokenProvider` 클래스 내부의 `private static final String` 상수로 선언했다. 자바 컴파일 타임 상수는 소스 코드뿐 아니라 컴파일된 `.class` 파일의 constant pool에도 그대로 문자열로 저장되므로, git 저장소 접근 권한이 없어도 배포된 `.jar`/Docker 이미지만 손에 넣으면(`unzip` + `strings`, 또는 디컴파일) 키를 그대로 추출할 수 있다. 검증 로직(`validateToken()`, `parseClaims()`) 자체는 정상 동작했고, 정확히 그 정직함 때문에 위조된 토큰도 "서명이 맞다"며 통과시켰다.
 
 ### 해결 방안
-`SECRET_KEY` 상수를 제거하고, `application.yaml`의 `jwt.secret` 프로퍼티를 생성자에서 `@Value("${jwt.secret}")`로 주입받는 방식으로 바꿨다. `jwt.secret: ${JWT_SECRET:evo-commerce-jwt-secret-key-for-token-signing-2026}` 형태로 선언해, 배포 환경에서는 `JWT_SECRET` 환경 변수로 값을 덮어쓸 수 있고 로컬 개발에는 기본값이 남는다. `@Value`를 필드가 아니라 생성자 파라미터로 받은 이유는, 스프링의 필드 주입이 생성자 실행 이후에 일어나서 필드 초기화 블록에서 곧바로 참조하면 `NullPointerException`이 나기 때문이다. 별도의 `@ConfigurationProperties` 클래스나 외부 시크릿 관리 서비스(Vault 등) 도입은 프로퍼티가 하나뿐인 현재 규모에서는 과설계로 판단해 적용하지 않았다. 자세한 트레이드오프는 `docs/retrospectives/Step_1.6_리뷰.md` 참고.
+`SECRET_KEY` 상수를 제거하고, `application.yaml`의 `jwt.secret` 프로퍼티를 생성자에서 `@Value("${jwt.secret}")`로 주입받는 방식으로 바꿨다. 공통 설정 블록에는 `jwt.secret: ${JWT_SECRET:evo-commerce-jwt-secret-key-for-token-signing-2026}` 형태로 선언해 로컬 개발용 기본값을 남기고, `JWT_SECRET` 환경 변수로 덮어쓸 수 있게 했다. `@Value`를 필드가 아니라 생성자 파라미터로 받은 이유는, 스프링의 필드 주입이 생성자 실행 이후에 일어나서 필드 초기화 블록에서 곧바로 참조하면 `NullPointerException`이 나기 때문이다.
+
+이 기본값이 배포 환경에서도 조용히 쓰일 수 있다는 갭이 남아 있어서, `application.yaml`의 `on-profile: prod` 블록에 `jwt.secret: ${JWT_SECRET}`(기본값 없이)를 추가로 선언했다. `prod` 프로필로 기동했는데 `JWT_SECRET`이 없으면 스프링이 플레이스홀더를 해석하지 못해 `PlaceholderResolutionException`으로 기동 자체가 실패한다 — 실제로 재현해서 확인했다. 별도의 `@ConfigurationProperties` 클래스나 외부 시크릿 관리 서비스(Vault 등) 도입은 프로퍼티가 하나뿐인 현재 규모에서는 과설계로 판단해 적용하지 않았다. `application.yaml`에 남아 있는 로컬 기본값 자체가 git 히스토리에 평문으로 존재한다는 점은 여전히 남은 과제다. 자세한 트레이드오프는 `docs/retrospectives/Step_1.6_리뷰.md` 참고.

@@ -30,3 +30,6 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
+
+jwt:
+  secret: ${JWT_SECRET}
