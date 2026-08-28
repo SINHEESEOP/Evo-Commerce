@@ -2,9 +2,6 @@ spring:
   application:
     name: Evo-Commerce
 
-  profiles:
-    default: local
-
   datasource:
     url: jdbc:mysql://localhost:3306/evo_commerce
     username: root

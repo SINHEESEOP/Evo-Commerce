@@ -4,8 +4,6 @@ Thumbs.db
 .env
 .env.*
 *.env
-application-local.yaml
-application-local.yml
 *.log
 logs/
 *.mv.db

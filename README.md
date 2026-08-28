@@ -13,14 +13,10 @@
 
 ## 실행 방법
 
-로컬 실행 전 `src/main/resources/application-local.yaml`을 만들고 아래 내용을 채운다(이 파일은 git에 커밋되지 않는다).
-
-```yaml
-jwt:
-  secret: <아무 문자열이나 로컬 개발용 값>
-```
+실행 전 `JWT_SECRET` 환경 변수를 지정한다(어떤 값이든 상관없지만 비워두면 기동이 실패한다).
 
 ```bash
+export JWT_SECRET=아무-문자열
 docker-compose up -d
 ./gradlew bootRun
 ```
@@ -34,7 +30,6 @@ docker-compose up -d
 | **ISSUE-03** | Testing / Spring | [WebMvcTest의 테스트 내부 정적 컨트롤러 미인식 문제](issues/ISSUE-03_webmvctest_ignores_nested_static_controller.md)   | `CLOSED` |
 | **ISSUE-04** | Backend / API Docs | [Swagger UI와 OpenAPI 문서가 환경 구분 없이 항상 노출됨](issues/ISSUE-04_swagger_ui_exposed_without_environment_restriction.md) | `CLOSED` |
 | **ISSUE-05** | Backend / JPA | [User 엔티티에 붙인 @Data가 비밀번호 로그 노출과 컬렉션 유실을 동시에 유발](issues/ISSUE-05_user_entity_tostring_leaks_password.md) | `CLOSED` |
-| **ISSUE-06** | Backend / Security | [JWT 서명 비밀키가 소스 코드에 하드코딩되어 토큰 위조가 가능함](issues/ISSUE-06_jwt_secret_hardcoded_in_source.md) | `CLOSED` |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
 

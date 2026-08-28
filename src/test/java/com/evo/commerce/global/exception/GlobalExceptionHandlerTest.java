@@ -1,10 +1,12 @@
 package com.evo.commerce.global.exception;
 
+import com.evo.commerce.global.auth.JwtTokenProvider;
 import com.evo.commerce.global.exception.support.ThrowingController;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -18,6 +20,9 @@ class GlobalExceptionHandlerTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @MockitoBean
+    JwtTokenProvider jwtTokenProvider;
 
     @Test
     void 검증_예외_응답_구조를_확인한다() throws Exception {
