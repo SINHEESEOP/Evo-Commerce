@@ -2,6 +2,9 @@ spring:
   application:
     name: Evo-Commerce
 
+  profiles:
+    default: local
+
   datasource:
     url: jdbc:mysql://localhost:3306/evo_commerce
     username: root
@@ -17,7 +20,7 @@ spring:
         format_sql: true
 
 jwt:
-  secret: ${JWT_SECRET:evo-commerce-jwt-secret-key-for-token-signing-2026}
+  secret: ${JWT_SECRET}
 
 ---
 spring:
@@ -30,6 +33,3 @@ springdoc:
     enabled: false
   swagger-ui:
     enabled: false
-
-jwt:
-  secret: ${JWT_SECRET}

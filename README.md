@@ -13,6 +13,13 @@
 
 ## 실행 방법
 
+로컬 실행 전 `src/main/resources/application-local.yaml`을 만들고 아래 내용을 채운다(이 파일은 git에 커밋되지 않는다).
+
+```yaml
+jwt:
+  secret: <아무 문자열이나 로컬 개발용 값>
+```
+
 ```bash
 docker-compose up -d
 ./gradlew bootRun
