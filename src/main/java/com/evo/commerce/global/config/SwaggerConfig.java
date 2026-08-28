@@ -14,6 +14,6 @@ public class SwaggerConfig {
                 .info(new Info()
                         .title("Evo-Commerce API")
                         .description("Evo-Commerce 백엔드 API 문서")
-                        .version("v1"));
+                        .version("v1.1"));
     }
 }
