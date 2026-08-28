@@ -26,6 +26,7 @@ docker-compose up -d
 | **ISSUE-02** | Backend / MVC | [전역 예외 처리기가 서버 오류에도 HTTP 200을 반환](issues/ISSUE-02_exception_handler_returns_200_for_server_errors.md) | `CLOSED` |
 | **ISSUE-03** | Testing / Spring | [WebMvcTest의 테스트 내부 정적 컨트롤러 미인식 문제](issues/ISSUE-03_webmvctest_ignores_nested_static_controller.md)   | `CLOSED` |
 | **ISSUE-04** | Backend / API Docs | [Swagger UI와 OpenAPI 문서가 환경 구분 없이 항상 노출됨](issues/ISSUE-04_swagger_ui_exposed_without_environment_restriction.md) | `CLOSED` |
+| **ISSUE-05** | Backend / JPA | [User 엔티티의 자동 생성 toString()이 평문 비밀번호를 로그에 남김](issues/ISSUE-05_user_entity_tostring_leaks_password.md) | `OPEN` |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
 
