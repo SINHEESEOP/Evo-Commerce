@@ -13,10 +13,13 @@
 
 ## 실행 방법
 
-실행 전 `JWT_SECRET` 환경 변수를 지정한다(어떤 값이든 상관없지만 비워두면 기동이 실패한다).
+`.env.example`을 복사해 `.env`를 만들고 값을 채운다(이 파일은 git에 커밋되지 않는다).
 
 ```bash
-export JWT_SECRET=아무-문자열
+cp .env.example .env
+```
+
+```bash
 docker-compose up -d
 ./gradlew bootRun
 ```
