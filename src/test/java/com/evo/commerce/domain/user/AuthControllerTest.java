@@ -36,7 +36,7 @@ class AuthControllerTest {
     @Test
     void 회원가입에_성공하면_사용자_정보를_반환한다() throws Exception {
         SignUpRequest request = new SignUpRequest("tester@evo-commerce.com", "plain1234!", "테스터");
-        UserResponse response = new UserResponse(1L, request.email(), "encoded-password", request.name(), UserRole.USER);
+        UserResponse response = new UserResponse(1L, request.email(), request.name(), UserRole.USER);
 
         given(authService.signUp(request)).willReturn(response);
 
@@ -52,7 +52,7 @@ class AuthControllerTest {
     @Test
     void 로그인에_성공하면_토큰을_반환한다() throws Exception {
         LoginRequest request = new LoginRequest("tester@evo-commerce.com", "plain1234!");
-        UserResponse userResponse = new UserResponse(1L, request.email(), "encoded-password", "테스터", UserRole.USER);
+        UserResponse userResponse = new UserResponse(1L, request.email(), "테스터", UserRole.USER);
         LoginResponse response = new LoginResponse("issued-token", userResponse);
 
         given(authService.login(request)).willReturn(response);

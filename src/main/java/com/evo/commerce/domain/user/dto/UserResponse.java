@@ -5,7 +5,6 @@ import com.evo.commerce.domain.user.UserRole;
 public record UserResponse(
         Long id,
         String email,
-        String password,
         String name,
         UserRole role
 ) {
