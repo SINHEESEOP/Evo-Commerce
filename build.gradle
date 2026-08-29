@@ -36,6 +36,9 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
 
+    // 비밀번호 해시화(BCrypt)를 위한 라이브러리 추가 (Spring Security 전체가 아닌 crypto 모듈만 사용)
+    implementation 'org.springframework.security:spring-security-crypto'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'

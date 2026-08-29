@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>회원가입 - Evo-Commerce</title>
+</head>
+<body>
+<h1>회원가입</h1>
+<form id="signup-form">
+    <div>
+        <label>이메일 <input type="email" id="email" required></label>
+    </div>
+    <div>
+        <label>비밀번호 <input type="password" id="password" required minlength="8"></label>
+    </div>
+    <div>
+        <label>이름 <input type="text" id="name" required></label>
+    </div>
+    <button type="submit">가입하기</button>
+</form>
+<p id="result"></p>
+
+<script>
+    document.getElementById('signup-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const response = await fetch('/api/auth/signup', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value,
+                name: document.getElementById('name').value
+            })
+        });
+
+        const body = await response.json();
+        const result = document.getElementById('result');
+
+        if (response.ok && body.success) {
+            result.textContent = `${body.data.name}님, 가입이 완료됐습니다. 로그인 페이지로 이동해주세요.`;
+        } else {
+            result.textContent = `가입 실패: ${body.message}`;
+        }
+    });
+</script>
+</body>
+</html>

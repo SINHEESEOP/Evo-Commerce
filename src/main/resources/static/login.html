@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>로그인 - Evo-Commerce</title>
+</head>
+<body>
+<h1>로그인</h1>
+<form id="login-form">
+    <div>
+        <label>이메일 <input type="email" id="email" required></label>
+    </div>
+    <div>
+        <label>비밀번호 <input type="password" id="password" required></label>
+    </div>
+    <button type="submit">로그인</button>
+</form>
+<p id="result"></p>
+
+<script>
+    document.getElementById('login-form').addEventListener('submit', async function (event) {
+        event.preventDefault();
+
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                email: document.getElementById('email').value,
+                password: document.getElementById('password').value
+            })
+        });
+
+        const body = await response.json();
+        const result = document.getElementById('result');
+
+        if (response.ok && body.success) {
+            localStorage.setItem('accessToken', body.data.token);
+            result.textContent = `${body.data.user.name}님, 환영합니다.`;
+        } else {
+            result.textContent = `로그인 실패: ${body.message}`;
+        }
+    });
+</script>
+</body>
+</html>
