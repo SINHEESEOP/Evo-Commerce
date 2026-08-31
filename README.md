@@ -35,6 +35,7 @@ docker-compose up -d
 | **ISSUE-05** | Backend / JPA | [User 엔티티에 붙인 @Data가 비밀번호 로그 노출과 컬렉션 유실을 동시에 유발](issues/ISSUE-05_user_entity_tostring_leaks_password.md) | `CLOSED` |
 | **ISSUE-07** | Backend / API | [회원가입/로그인 API 응답에 비밀번호 해시가 그대로 노출됨](issues/ISSUE-07_password_hash_leaked_in_auth_response.md) | `CLOSED` |
 | **ISSUE-08** | Backend / Domain | [재고보다 많은 수량으로 차감하면 재고가 음수가 됨](issues/ISSUE-08_product_stock_can_go_negative.md) | `CLOSED` |
+| **ISSUE-09** | Backend / API | [존재하지 않는 상품 상세 조회 시 404 대신 500이 반환됨](issues/ISSUE-09_product_detail_not_found_returns_500.md) | `OPEN` |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
 

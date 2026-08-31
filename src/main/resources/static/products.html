@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>상품 목록 - Evo-Commerce</title>
+</head>
+<body>
+<h1>상품 목록</h1>
+<ul id="product-list"></ul>
+<p id="result"></p>
+
+<script>
+    (async function () {
+        const token = localStorage.getItem('accessToken');
+        const result = document.getElementById('result');
+
+        if (!token) {
+            result.textContent = '로그인이 필요합니다.';
+            return;
+        }
+
+        const response = await fetch('/api/products', {
+            headers: {'Authorization': `Bearer ${token}`}
+        });
+
+        const body = await response.json();
+
+        if (response.ok && body.success) {
+            const list = document.getElementById('product-list');
+            body.data.forEach(function (product) {
+                const item = document.createElement('li');
+                item.innerHTML = `<a href="/product-detail.html?id=${product.id}">${product.name}</a> - ${product.price}원 (재고 ${product.stock}개)`;
+                list.appendChild(item);
+            });
+        } else {
+            result.textContent = `조회 실패: ${body.message}`;
+        }
+    })();
+</script>
+</body>
+</html>
