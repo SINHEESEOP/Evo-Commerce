@@ -12,6 +12,7 @@ import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -21,6 +22,7 @@ public class OrderFacade {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
 
+    @Transactional
     public OrderResponse placeOrder(Long userId, OrderCreateRequest request) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));

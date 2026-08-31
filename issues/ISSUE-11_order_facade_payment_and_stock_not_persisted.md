@@ -39,10 +39,14 @@
 - 결과적으로 `OrderMapper.toResponse(saved)`가 응답으로 내려주는 값은 메모리 상에서는 맞지만 DB 상태와는 무관한 값이다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성)
+`OrderFacade.placeOrder()`에 트랜잭션 경계(`@Transactional`)가 없었다. `JpaRepository`의 `findById()`/`save()`는 각각 자기 자신의 트랜잭션을 갖고, 그 메서드가 반환되는 순간 트랜잭션과 영속성 컨텍스트가 함께 끝난다. 그래서 `findById()`로 가져온 `Product`, `save()`가 반환한 `Order`는 반환 즉시 준영속 상태가 됐고, 이후 `product.decreaseStock()`과 `saved.pay()`로 만든 필드 변경은 그 변경을 추적할 영속성 컨텍스트가 이미 없어 어떤 UPDATE SQL도 만들어내지 못한 채 사라졌다. `Order`/`OrderItem`은 `save()` 호출 자체가 명시적인 INSERT였기 때문에 정상 저장됐지만, 그 이후의 상태 변경(`pay()`)은 저장되지 않았다.
+
+이 결함은 Mockito로 리포지토리를 모킹한 `OrderFacadeTest`로는 드러나지 않았다. Mock은 트랜잭션·영속성 컨텍스트 개념 자체가 없어서, 테스트 코드가 들고 있는 객체의 필드 변경이 그대로 보였을 뿐이다. 실제 DB로 검증하는 `@SpringBootTest`(테스트 메서드 자체를 트랜잭션으로 감싸지 않은 형태)로 응답 직후 DB를 다시 조회했을 때만 재현됐다.
 
 ### 해결 방안
-(해결 시 작성)
+`OrderFacade.placeOrder()`에 `@Transactional`을 추가해, `findById()`로 가져온 엔티티들과 `save()`가 반환한 `Order`가 메서드 종료(트랜잭션 커밋) 시점까지 계속 영속 상태를 유지하도록 했다. 이제 `decreaseStock()`/`pay()`가 만든 변경은 커밋 시점에 더티 체킹으로 자동 반영된다. 부수 효과로, 여러 아이템 중 하나가 재고 부족으로 실패하는 경우 앞서 처리된 아이템의 재고 차감도 함께 롤백된다(`BusinessException`이 `RuntimeException`이라 Spring 기본 롤백 정책에 그대로 들어맞는다).
+
+회귀 테스트로 `OrderFacadeTransactionTest`를 추가했다. 트랜잭션으로 감싸지 않은 `@SpringBootTest`에서 `placeOrder()`를 호출한 뒤 같은 리포지토리로 DB를 다시 조회해, 응답 값이 아니라 실제 저장된 상태(`status = PAID`, 차감된 `stock`)를 검증한다. Mock 기반 테스트와 달리 이 구성이어야 트랜잭션 누락을 실제로 잡아낸다는 것도 함께 확인했다. 트랜잭션 경계와 Mock 테스트의 한계에 대한 상세 논의는 `docs/study/Facade_패턴과_주문_오케스트레이션.md` 참고.
