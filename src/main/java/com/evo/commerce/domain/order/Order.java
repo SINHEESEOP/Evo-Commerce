@@ -62,6 +62,7 @@ public class Order {
     }
 
     public void addItem(OrderItem orderItem) {
+        orderItem.assignOrder(this);
         this.orderItems.add(orderItem);
     }
 

@@ -44,4 +44,8 @@ public class OrderItem {
         this.quantity = quantity;
         this.productSnapshot = new ProductSnapshot(product.getName(), product.getPrice());
     }
+
+    void assignOrder(Order order) {
+        this.order = order;
+    }
 }

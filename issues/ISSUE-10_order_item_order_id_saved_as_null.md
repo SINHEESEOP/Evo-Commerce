@@ -32,10 +32,10 @@
 - 같은 영속성 컨텍스트 안에서 저장 직후 `order.getOrderItems()`를 읽으면 메모리에 들어있는 리스트가 그대로 보이므로 문제가 드러나지 않는다. 영속성 컨텍스트를 비우고 DB에서 다시 읽어와야 비로소 드러난다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`Order.orderItems`는 `mappedBy = "order"`로 선언된 연관관계의 주인이 아닌 쪽이라, JPA가 flush 시점에 이 컬렉션의 상태를 FK 컬럼 값 결정에 사용하지 않는다. 실제 FK(`order_id`)는 연관관계의 주인인 `OrderItem.order` 필드가 결정하는데, `Order.addItem()`이 그 필드를 설정하지 않아 항상 `null`로 남았고, 그 결과 `order_items` 행이 `order_id = NULL`로 저장됐다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+`Order.addItem()`이 컬렉션에 추가하기 전에 `orderItem.assignOrder(this)`를 호출해 연관관계의 주인 쪽 필드도 함께 설정하도록 수정했다(연관관계 편의 메서드). 이 메서드는 애그리거트 루트인 `Order`에만 진입점을 두고, `OrderItem.assignOrder()`는 패키지 전용으로 좁혀서 `Order`를 거치지 않고는 이 관계를 맺을 수 없도록 했다. `em.flush()` + `em.clear()` 이후 다시 조회해도 주문 아이템이 유지되는지 검증하는 회귀 테스트를 `OrderRepositoryTest`에 추가했다. 상세 트레이드오프는 `docs/retrospectives/Step_2.2_리뷰.md` 참고.
