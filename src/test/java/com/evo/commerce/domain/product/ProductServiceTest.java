@@ -1,6 +1,8 @@
 package com.evo.commerce.domain.product;
 
 import com.evo.commerce.domain.product.dto.ProductResponse;
+import com.evo.commerce.global.exception.BusinessException;
+import com.evo.commerce.global.exception.ProductErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -11,6 +13,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,5 +56,14 @@ class ProductServiceTest {
         assertThat(response.name()).isEqualTo("테스트 상품");
         assertThat(response.price()).isEqualTo(10000);
         assertThat(response.stock()).isEqualTo(5);
+    }
+
+    @Test
+    void 존재하지_않는_상품_아이디로_조회하면_예외가_발생한다() {
+        given(productRepository.findById(999L)).willReturn(Optional.empty());
+
+        assertThatThrownBy(() -> productService.getProduct(999L))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ProductErrorCode.PRODUCT_NOT_FOUND);
     }
 }

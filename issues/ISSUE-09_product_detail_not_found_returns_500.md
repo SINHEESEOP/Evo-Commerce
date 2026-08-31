@@ -21,10 +21,10 @@
 - "상품이 존재하지 않는다"는 클라이언트 입력(경로 변수 `id`)에 따라 정상적으로 발생할 수 있는 비즈니스 상황인데, 서버 내부 오류와 동일하게 취급되고 있다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`ProductService.getProduct()`가 상품이 존재하지 않는 상황을 `IllegalArgumentException`으로 표현했는데, `GlobalExceptionHandler`는 `BusinessException`만 `ErrorCode`가 정의한 상태 코드로 매핑하고 나머지 예외는 전부 500으로 처리한다. 예외를 던지는 형태 자체는 맞았지만, 이 프로젝트의 표준 컨벤션(`ErrorCode` + `BusinessException`)을 따르지 않아서 정상적인 비즈니스 상황이 서버 오류로 취급됐다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+`ProductErrorCode`에 `PRODUCT_NOT_FOUND(HttpStatus.NOT_FOUND, "존재하지 않는 상품입니다.")`를 추가하고, `ProductService.getProduct()`가 `BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND)`를 던지도록 수정했다. `GlobalExceptionHandler`의 기존 `BusinessException` 처리 경로를 그대로 재사용해 별도의 핸들러 추가 없이 404가 응답된다. 상세 트레이드오프는 `docs/retrospectives/Step_1.9_리뷰.md` 참고.

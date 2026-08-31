@@ -1,6 +1,8 @@
 package com.evo.commerce.domain.product;
 
 import com.evo.commerce.domain.product.dto.ProductResponse;
+import com.evo.commerce.global.exception.BusinessException;
+import com.evo.commerce.global.exception.ProductErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -20,7 +22,7 @@ public class ProductService {
 
     public ProductResponse getProduct(Long id) {
         Product product = productRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("존재하지 않는 상품입니다."));
+                .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         return ProductMapper.toResponse(product);
     }
 }
