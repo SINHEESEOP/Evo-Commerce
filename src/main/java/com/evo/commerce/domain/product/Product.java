@@ -1,5 +1,7 @@
 package com.evo.commerce.domain.product;
 
+import com.evo.commerce.global.exception.BusinessException;
+import com.evo.commerce.global.exception.ProductErrorCode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.GeneratedValue;
@@ -51,6 +53,12 @@ public class Product {
     }
 
     public void decreaseStock(int quantity) {
+        if (quantity <= 0) {
+            throw new IllegalArgumentException("차감 수량은 0보다 커야 합니다.");
+        }
+        if (this.stock < quantity) {
+            throw new BusinessException(ProductErrorCode.INSUFFICIENT_STOCK);
+        }
         this.stock -= quantity;
     }
 
