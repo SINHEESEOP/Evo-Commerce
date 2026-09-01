@@ -4,16 +4,13 @@ import com.evo.commerce.domain.product.Product;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.evo.commerce.domain.order.OrderTestFixtures.newProduct;
 
 class OrderItemTest {
 
     @Test
     void 상품으로_주문_아이템을_생성하면_상품_스냅샷을_저장한다() {
-        Product product = Product.builder()
-                .name("테스트 상품")
-                .price(10000)
-                .stock(10)
-                .build();
+        Product product = newProduct();
 
         OrderItem orderItem = OrderItem.builder()
                 .product(product)

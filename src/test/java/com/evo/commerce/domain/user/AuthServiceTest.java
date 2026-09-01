@@ -20,6 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static com.evo.commerce.domain.user.UserTestFixtures.newUser;
 
 @ExtendWith(MockitoExtension.class)
 class AuthServiceTest {
@@ -66,12 +67,7 @@ class AuthServiceTest {
     @Test
     void 이메일과_비밀번호가_일치하면_로그인에_성공한다() throws Exception {
         LoginRequest request = new LoginRequest("tester@evo-commerce.com", "plain1234!");
-        User user = User.builder()
-                .email(request.email())
-                .password("encoded-password")
-                .name("테스터")
-                .role(UserRole.USER)
-                .build();
+        User user = newUser(request.email(), "encoded-password");
 
         given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
         given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(true);
@@ -86,12 +82,7 @@ class AuthServiceTest {
     @Test
     void 비밀번호가_일치하지_않으면_로그인에_실패한다() throws Exception {
         LoginRequest request = new LoginRequest("tester@evo-commerce.com", "wrong-password");
-        User user = User.builder()
-                .email(request.email())
-                .password("encoded-password")
-                .name("테스터")
-                .role(UserRole.USER)
-                .build();
+        User user = newUser(request.email(), "encoded-password");
 
         given(userRepository.findByEmail(request.email())).willReturn(Optional.of(user));
         given(passwordEncoder.matches(request.password(), user.getPassword())).willReturn(false);

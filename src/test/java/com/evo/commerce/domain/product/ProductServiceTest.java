@@ -15,6 +15,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static com.evo.commerce.domain.product.ProductTestFixtures.newProduct;
 
 @ExtendWith(MockitoExtension.class)
 class ProductServiceTest {
@@ -27,11 +28,7 @@ class ProductServiceTest {
 
     @Test
     void 등록된_상품_목록을_조회한다() {
-        Product product = Product.builder()
-                .name("테스트 상품")
-                .price(10000)
-                .stock(5)
-                .build();
+        Product product = newProduct(5);
 
         given(productRepository.findAll()).willReturn(List.of(product));
 
@@ -43,11 +40,7 @@ class ProductServiceTest {
 
     @Test
     void 상품_아이디로_상세_정보를_조회한다() {
-        Product product = Product.builder()
-                .name("테스트 상품")
-                .price(10000)
-                .stock(5)
-                .build();
+        Product product = newProduct(5);
 
         given(productRepository.findById(1L)).willReturn(Optional.of(product));
 

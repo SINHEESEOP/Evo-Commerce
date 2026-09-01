@@ -16,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static com.evo.commerce.domain.order.OrderTestFixtures.newProduct;
 
 @SpringBootTest
 class OrderFacadeTransactionTest {
@@ -59,11 +60,7 @@ class OrderFacadeTransactionTest {
                 .build());
         userId = user.getId();
 
-        Product product = productRepository.save(Product.builder()
-                .name("테스트 상품")
-                .price(10000)
-                .stock(10)
-                .build());
+        Product product = productRepository.save(newProduct());
         productId = product.getId();
 
         OrderCreateRequest request = new OrderCreateRequest(

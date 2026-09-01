@@ -1,33 +1,15 @@
 package com.evo.commerce.domain.order;
 
-import com.evo.commerce.domain.product.Product;
-import com.evo.commerce.domain.user.User;
-import com.evo.commerce.domain.user.UserRole;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.OrderErrorCode;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static com.evo.commerce.domain.order.OrderTestFixtures.newProduct;
+import static com.evo.commerce.domain.order.OrderTestFixtures.newUser;
 
 class OrderTest {
-
-    private User newUser() {
-        return User.builder()
-                .email("tester@evo-commerce.com")
-                .password("encoded-password")
-                .name("테스터")
-                .role(UserRole.USER)
-                .build();
-    }
-
-    private Product newProduct() {
-        return Product.builder()
-                .name("테스트 상품")
-                .price(10000)
-                .stock(10)
-                .build();
-    }
 
     @Test
     void 주문을_생성하면_상태가_CREATED다() {

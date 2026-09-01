@@ -8,7 +8,6 @@ import com.evo.commerce.domain.product.Product;
 import com.evo.commerce.domain.product.ProductRepository;
 import com.evo.commerce.domain.user.User;
 import com.evo.commerce.domain.user.UserRepository;
-import com.evo.commerce.domain.user.UserRole;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.OrderErrorCode;
 import com.evo.commerce.global.exception.ProductErrorCode;
@@ -26,6 +25,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static com.evo.commerce.domain.order.OrderTestFixtures.newProduct;
+import static com.evo.commerce.domain.order.OrderTestFixtures.newUser;
 
 @ExtendWith(MockitoExtension.class)
 class OrderFacadeTest {
@@ -44,23 +45,6 @@ class OrderFacadeTest {
 
     @InjectMocks
     OrderFacade orderFacade;
-
-    private User newUser() {
-        return User.builder()
-                .email("tester@evo-commerce.com")
-                .password("encoded-password")
-                .name("테스터")
-                .role(UserRole.USER)
-                .build();
-    }
-
-    private Product newProduct() {
-        return Product.builder()
-                .name("테스트 상품")
-                .price(10000)
-                .stock(10)
-                .build();
-    }
 
     @Test
     void 주문을_생성하면_결제_대기_상태의_주문을_반환한다() {

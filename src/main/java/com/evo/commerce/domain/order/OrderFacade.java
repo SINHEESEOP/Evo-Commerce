@@ -51,21 +51,22 @@ public class OrderFacade {
 
     @Transactional(readOnly = true)
     public OrderResponse getOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new BusinessException(OrderErrorCode.ORDER_NOT_FOUND));
-
-        return OrderMapper.toResponse(order);
+        return OrderMapper.toResponse(findOrderOrThrow(orderId));
     }
 
     @Transactional
     public OrderResponse confirmPayment(Long orderId, PaymentConfirmRequest request) {
-        Order order = orderRepository.findById(orderId)
-                .orElseThrow(() -> new BusinessException(OrderErrorCode.ORDER_NOT_FOUND));
+        Order order = findOrderOrThrow(orderId);
 
         tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
 
         order.pay();
 
         return OrderMapper.toResponse(order);
+    }
+
+    private Order findOrderOrThrow(Long orderId) {
+        return orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(OrderErrorCode.ORDER_NOT_FOUND));
     }
 }
