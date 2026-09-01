@@ -19,13 +19,16 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static com.evo.commerce.domain.order.OrderTestFixtures.newProduct;
 import static com.evo.commerce.domain.order.OrderTestFixtures.newUser;
@@ -44,6 +47,9 @@ class OrderFacadeTest {
 
     @Mock
     TossPaymentClient tossPaymentClient;
+
+    @Mock
+    ApplicationEventPublisher eventPublisher;
 
     @InjectMocks
     OrderFacade orderFacade;
@@ -116,6 +122,7 @@ class OrderFacadeTest {
         OrderResponse response = orderFacade.confirmPayment(1L, request);
 
         assertThat(response.status()).isEqualTo(OrderStatus.PAID);
+        verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
     }
 
     @Test
@@ -159,6 +166,7 @@ class OrderFacadeTest {
         orderFacade.handlePaymentWebhook(request);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+        verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
     }
 
     @Test
@@ -176,5 +184,6 @@ class OrderFacadeTest {
         orderFacade.handlePaymentWebhook(request);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+        verifyNoInteractions(eventPublisher);
     }
 }

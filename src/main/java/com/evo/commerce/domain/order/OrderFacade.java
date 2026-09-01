@@ -14,6 +14,7 @@ import com.evo.commerce.global.exception.OrderErrorCode;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -25,6 +26,7 @@ public class OrderFacade {
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
     private final TossPaymentClient tossPaymentClient;
+    private final ApplicationEventPublisher eventPublisher;
 
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderCreateRequest request) {
@@ -66,6 +68,7 @@ public class OrderFacade {
         tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
 
         order.pay();
+        eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
 
         return OrderMapper.toResponse(order);
     }
@@ -83,6 +86,7 @@ public class OrderFacade {
         }
 
         order.pay();
+        eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
     }
 
     private Order findOrderOrThrow(Long orderId) {
