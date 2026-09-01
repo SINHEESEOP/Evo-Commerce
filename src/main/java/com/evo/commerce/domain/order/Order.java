@@ -66,6 +66,12 @@ public class Order {
         this.orderItems.add(orderItem);
     }
 
+    public int calculateTotalAmount() {
+        return orderItems.stream()
+                .mapToInt(item -> item.getProductSnapshot().unitPrice() * item.getQuantity())
+                .sum();
+    }
+
     public void pay() {
         if (this.status != OrderStatus.CREATED) {
             throw new BusinessException(OrderErrorCode.INVALID_STATUS_TRANSITION);

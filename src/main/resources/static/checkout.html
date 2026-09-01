@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>결제 - Evo-Commerce</title>
+    <script src="https://js.tosspayments.com/v1/payment"></script>
+</head>
+<body>
+<h1>주문 결제</h1>
+<dl id="order-detail"></dl>
+<button id="pay-button">결제하기</button>
+<p id="result"></p>
+
+<script>
+    (async function () {
+        const clientKey = 'test_ck_D5GePWvyJnrK0W0k6q8gLzN97Eoq';
+        const token = localStorage.getItem('accessToken');
+        const result = document.getElementById('result');
+
+        if (!token) {
+            result.textContent = '로그인이 필요합니다.';
+            return;
+        }
+
+        const orderId = new URLSearchParams(window.location.search).get('orderId');
+
+        const response = await fetch(`/api/orders/${orderId}`, {
+            headers: {'Authorization': `Bearer ${token}`}
+        });
+
+        const body = await response.json();
+
+        if (!response.ok || !body.success) {
+            result.textContent = `주문 조회 실패: ${body.message}`;
+            return;
+        }
+
+        const order = body.data;
+        const orderName = order.items.map(item => item.productName).join(', ');
+
+        document.getElementById('order-detail').innerHTML = `
+            <dt>주문번호</dt><dd>${order.id}</dd>
+            <dt>주문상태</dt><dd>${order.status}</dd>
+            <dt>결제금액</dt><dd>${order.totalAmount}원</dd>
+        `;
+
+        document.getElementById('pay-button').addEventListener('click', () => {
+            const tossPayments = TossPayments(clientKey);
+            tossPayments.requestPayment('카드', {
+                amount: order.totalAmount,
+                orderId: String(order.id),
+                orderName: orderName,
+                successUrl: `${window.location.origin}/checkout-result.html`,
+                failUrl: `${window.location.origin}/checkout-result.html`
+            });
+        });
+    })();
+</script>
+</body>
+</html>

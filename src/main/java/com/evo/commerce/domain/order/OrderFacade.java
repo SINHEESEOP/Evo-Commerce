@@ -3,11 +3,13 @@ package com.evo.commerce.domain.order;
 import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
+import com.evo.commerce.domain.order.dto.PaymentConfirmRequest;
 import com.evo.commerce.domain.product.Product;
 import com.evo.commerce.domain.product.ProductRepository;
 import com.evo.commerce.domain.user.User;
 import com.evo.commerce.domain.user.UserRepository;
 import com.evo.commerce.global.exception.BusinessException;
+import com.evo.commerce.global.exception.OrderErrorCode;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +23,7 @@ public class OrderFacade {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final TossPaymentClient tossPaymentClient;
 
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderCreateRequest request) {
@@ -42,8 +45,27 @@ public class OrderFacade {
         }
 
         Order saved = orderRepository.save(order);
-        saved.pay();
 
         return OrderMapper.toResponse(saved);
+    }
+
+    @Transactional(readOnly = true)
+    public OrderResponse getOrder(Long orderId) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public OrderResponse confirmPayment(Long orderId, PaymentConfirmRequest request) {
+        Order order = orderRepository.findById(orderId)
+                .orElseThrow(() -> new BusinessException(OrderErrorCode.ORDER_NOT_FOUND));
+
+        tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
+
+        order.pay();
+
+        return OrderMapper.toResponse(order);
     }
 }

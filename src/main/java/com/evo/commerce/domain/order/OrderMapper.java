@@ -12,7 +12,7 @@ public class OrderMapper {
                 .map(OrderMapper::toItemResponse)
                 .toList();
 
-        return new OrderResponse(order.getId(), order.getStatus(), items);
+        return new OrderResponse(order.getId(), order.getStatus(), order.calculateTotalAmount(), items);
     }
 
     private static OrderItemResponse toItemResponse(OrderItem orderItem) {

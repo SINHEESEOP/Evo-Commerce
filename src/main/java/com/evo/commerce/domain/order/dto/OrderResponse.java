@@ -7,6 +7,7 @@ import java.util.List;
 public record OrderResponse(
         Long id,
         OrderStatus status,
+        int totalAmount,
         List<OrderItemResponse> items
 ) {
 }
