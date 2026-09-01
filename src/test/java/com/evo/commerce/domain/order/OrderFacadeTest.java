@@ -160,4 +160,21 @@ class OrderFacadeTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
     }
+
+    @Test
+    void 이미_PAID인_주문에_같은_웹훅이_다시_와도_예외_없이_무시한다() {
+        Order order = Order.builder().user(newUser()).build();
+        order.addItem(OrderItem.builder().product(newProduct()).quantity(2).build());
+        order.pay();
+        TossWebhookRequest request = new TossWebhookRequest(
+                "PAYMENT_STATUS_CHANGED",
+                new TossWebhookRequest.Data("payment-key-1", "1", "DONE")
+        );
+
+        given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+
+        orderFacade.handlePaymentWebhook(request);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+    }
 }

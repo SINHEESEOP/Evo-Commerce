@@ -74,9 +74,15 @@ public class OrderFacade {
     public void handlePaymentWebhook(TossWebhookRequest request) {
         Order order = findOrderOrThrow(Long.valueOf(request.data().orderId()));
 
-        if ("DONE".equals(request.data().status())) {
-            order.pay();
+        if (!"DONE".equals(request.data().status())) {
+            return;
         }
+
+        if (order.getStatus() == OrderStatus.PAID) {
+            return;
+        }
+
+        order.pay();
     }
 
     private Order findOrderOrThrow(Long orderId) {

@@ -27,10 +27,24 @@
 - `TossWebhookController`는 이 예외를 그대로 흘려보내고, `GlobalExceptionHandler`가 `OrderErrorCode`에 정의된 HTTP 상태(409)로 변환해 응답한다. Toss 입장에서는 200이 아니므로 실패로 판단하고 재전송하며, 재전송할 때마다 같은 409가 반복된다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 후 작성)
+`handlePaymentWebhook()`이 "이 이벤트를 처음 받는지, 이미 처리한 이벤트의 재전송인지"를 구분하지 않았다. `Order.pay()`의 상태 전이 가드(`status != CREATED`면 예외)는 원래 "잘못된 순서로 상태를 바꾸려는 시도"를 막기 위한 것인데, "이미 같은 이벤트를 처리해서 사실상 아무 문제도 없는 정상적인 재전송"까지 이 가드에 걸려 같은 예외로 처리됐다. 그 예외가 그대로 흘러나가 Toss에게 비-200 응답이 갔고, Toss는 이를 처리 실패로 판단해 재전송을 반복했다.
 
 ### 해결 방안
-(해결 후 작성)
+`handlePaymentWebhook()`에서 `order.pay()`를 호출하기 전에 주문이 이미 목표 상태(`PAID`)인지 먼저 확인하도록 했다. 이미 `PAID`면 아무 것도 하지 않고 그대로 반환해, 컨트롤러는 예외 없이 200을 응답한다.
+
+```java
+if (!"DONE".equals(request.data().status())) {
+    return;
+}
+if (order.getStatus() == OrderStatus.PAID) {
+    return;   // 이미 처리된 이벤트의 재전송 — 조용히 성공 처리
+}
+order.pay();
+```
+
+회귀 테스트로 같은 웹훅을 두 번 처리했을 때 예외 없이 `PAID` 상태가 유지되는지 검증했다. 이벤트 자체에 고유 식별자를 부여해 처리 이력을 추적하는 방식(멱등성 키)도 검토했지만, 지금 웹훅에 딸린 부수 효과가 상태 전이 하나뿐이라 "이미 목표 상태인지" 확인만으로 충분하다고 판단했다. 대안 비교는 `docs/decisions/013_webhook_idempotency_via_target_state_check.md` 참고.
+
+이미 `CANCELLED`인 주문에 결제 완료 웹훅이 오는 경우는 이번 수정 범위 밖이다 — "정상적인 중복 수신"이 아니라 결제와 취소가 경쟁하는 별도의 정합성 문제이므로 여전히 예외를 던진다.
