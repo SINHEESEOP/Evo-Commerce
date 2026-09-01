@@ -4,6 +4,7 @@ import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
 import com.evo.commerce.domain.order.dto.PaymentConfirmRequest;
+import com.evo.commerce.domain.order.dto.TossWebhookRequest;
 import com.evo.commerce.domain.product.Product;
 import com.evo.commerce.domain.product.ProductRepository;
 import com.evo.commerce.domain.user.User;
@@ -67,6 +68,15 @@ public class OrderFacade {
         order.pay();
 
         return OrderMapper.toResponse(order);
+    }
+
+    @Transactional
+    public void handlePaymentWebhook(TossWebhookRequest request) {
+        Order order = findOrderOrThrow(Long.valueOf(request.data().orderId()));
+
+        if ("DONE".equals(request.data().status())) {
+            order.pay();
+        }
     }
 
     private Order findOrderOrThrow(Long orderId) {

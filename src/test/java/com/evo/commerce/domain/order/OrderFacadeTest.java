@@ -4,6 +4,7 @@ import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
 import com.evo.commerce.domain.order.dto.PaymentConfirmRequest;
+import com.evo.commerce.domain.order.dto.TossWebhookRequest;
 import com.evo.commerce.domain.product.Product;
 import com.evo.commerce.domain.product.ProductRepository;
 import com.evo.commerce.domain.user.User;
@@ -142,5 +143,21 @@ class OrderFacadeTest {
         assertThatThrownBy(() -> orderFacade.confirmPayment(999L, request))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", OrderErrorCode.ORDER_NOT_FOUND);
+    }
+
+    @Test
+    void 결제완료_웹훅을_받으면_주문_상태가_PAID로_변경된다() {
+        Order order = Order.builder().user(newUser()).build();
+        order.addItem(OrderItem.builder().product(newProduct()).quantity(2).build());
+        TossWebhookRequest request = new TossWebhookRequest(
+                "PAYMENT_STATUS_CHANGED",
+                new TossWebhookRequest.Data("payment-key-1", "1", "DONE")
+        );
+
+        given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+
+        orderFacade.handlePaymentWebhook(request);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
     }
 }
