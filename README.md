@@ -24,31 +24,14 @@ docker-compose up -d
 ./gradlew bootRun
 ```
 
+## 이슈 리스트
+
+개발 중 만난 버그 전체 목록은 [Wiki: 이슈 리스트](https://github.com/SINHEESEOP/Evo-Commerce/wiki/이슈-리스트)에서 확인할 수 있습니다.
+
 ## 트러블슈팅
 
-| ID | 카테고리 | 문제 및 해결 요약 (링크)                                                                                               | 상태 |
-|:---|:---|:-----------------------------------------------------------------------------------------------------------------------|:---:|
-| **ISSUE-01** | Infra / Docker | [MySQL 컨테이너 기동 지연으로 인한 앱 커넥션 실패](issues/ISSUE-01_mysql_startup_race_condition.md)                    | `CLOSED` |
-| **ISSUE-02** | Backend / MVC | [전역 예외 처리기가 서버 오류에도 HTTP 200을 반환](issues/ISSUE-02_exception_handler_returns_200_for_server_errors.md) | `CLOSED` |
-| **ISSUE-03** | Testing / Spring | [WebMvcTest의 테스트 내부 정적 컨트롤러 미인식 문제](issues/ISSUE-03_webmvctest_ignores_nested_static_controller.md)   | `CLOSED` |
-| **ISSUE-04** | Backend / API Docs | [Swagger UI와 OpenAPI 문서가 환경 구분 없이 항상 노출됨](issues/ISSUE-04_swagger_ui_exposed_without_environment_restriction.md) | `CLOSED` |
-| **ISSUE-05** | Backend / JPA | [User 엔티티에 붙인 @Data가 비밀번호 로그 노출과 컬렉션 유실을 동시에 유발](issues/ISSUE-05_user_entity_tostring_leaks_password.md) | `CLOSED` |
-| **ISSUE-07** | Backend / API | [회원가입/로그인 API 응답에 비밀번호 해시가 그대로 노출됨](issues/ISSUE-07_password_hash_leaked_in_auth_response.md) | `CLOSED` |
-| **ISSUE-08** | Backend / Domain | [재고보다 많은 수량으로 차감하면 재고가 음수가 됨](issues/ISSUE-08_product_stock_can_go_negative.md) | `CLOSED` |
-| **ISSUE-10** | Backend / JPA | [주문에 담은 상품이 저장 후 다시 조회하면 사라짐](issues/ISSUE-10_order_item_order_id_saved_as_null.md) | `CLOSED` |
-| **ISSUE-11** | Backend / Transaction | [주문 결제와 재고 차감이 응답에는 반영되지만 DB에는 저장되지 않음](issues/ISSUE-11_order_facade_payment_and_stock_not_persisted.md) | `CLOSED` |
-| **ISSUE-12** | Backend / Payment | [결제 승인 처리 시 실제 결제 금액을 서버가 검증하지 않음](issues/ISSUE-12_payment_confirm_trusts_toss_response_without_amount_verification.md) | `CLOSED` |
-| **ISSUE-13** | Backend / Payment | [Toss 웹훅이 중복 전달되면 예외가 그대로 응답되어 재시도가 계속됨](issues/ISSUE-13_toss_webhook_duplicate_delivery_not_idempotent.md) | `OPEN` |
+구조적인 원인 분석이나 트레이드오프 비교가 필요했던 굵직한 주제(동시성 제어, 비동기 메시징, 캐싱 전략, 부하 테스트 등)는 [GitHub Wiki](https://github.com/SINHEESEOP/Evo-Commerce/wiki)에 딥다이브로 정리됩니다.
 
-> 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
+## 구현 메모
 
-### 기술적 작은..? 의사결정
-
-| 문서                                                         | 문제 상황 → 선택 → 결과                                                                                                                            |
-|--------------------------------------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------------|
-| [001](docs/decisions/001_exception_handler_test_strategy.md) | 예외 처리기 검증에 상태 코드까지 필요해 단위 테스트 대신 슬라이스 테스트를 선택했고, <br/>그 과정에서 만난 WebMvcTest 트러블슈팅을 별도 이슈로 분리했다 |
-| [002](docs/decisions/002_error_code_status_mapping.md)       | 비즈니스 예외의 HTTP 상태 코드를 핸들러에서 타입별로 분기하는 대신, <br/>`ErrorCode`가 상태 코드를 스스로 갖게 해 예외 추가 시 핸들러 수정을 없앴다 |
-| [003](docs/decisions/003_swagger_exposure_profile_control.md) | Swagger 문서가 환경 구분 없이 항상 열려 있어, `@Profile`로 빈을 막는 대신 <br/>`application.yaml`의 `prod` 프로필 블록에서 springdoc의 `enabled` 스위치를 껐다 |
-| [004](docs/decisions/004_user_entity_equals_hashcode.md) | `@Data`가 만든 equals/hashCode가 저장 전후로 값이 바뀌어 HashSet이 엔티티를 잃어버려서, <br/>`hashCode`를 클래스 단위 상수로 고정하고 `equals`는 `id` 기반으로 직접 재정의했다 |
-
-> 구현 중 있었던 작은 기술적 판단을 짧게 기록합니다. 더 큰 아키텍처 결정은 별도로 정리됩니다.
+구현 중 있었던 작은 기술적 판단은 [Wiki: 구현 메모](https://github.com/SINHEESEOP/Evo-Commerce/wiki/구현-메모)에 정리돼 있습니다.
