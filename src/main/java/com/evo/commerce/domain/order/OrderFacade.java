@@ -58,6 +58,10 @@ public class OrderFacade {
     public OrderResponse confirmPayment(Long orderId, PaymentConfirmRequest request) {
         Order order = findOrderOrThrow(orderId);
 
+        if (order.calculateTotalAmount() != request.amount()) {
+            throw new BusinessException(OrderErrorCode.PAYMENT_AMOUNT_MISMATCH);
+        }
+
         tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
 
         order.pay();

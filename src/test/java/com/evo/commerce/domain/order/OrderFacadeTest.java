@@ -25,6 +25,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static com.evo.commerce.domain.order.OrderTestFixtures.newProduct;
 import static com.evo.commerce.domain.order.OrderTestFixtures.newUser;
 
@@ -114,6 +115,22 @@ class OrderFacadeTest {
         OrderResponse response = orderFacade.confirmPayment(1L, request);
 
         assertThat(response.status()).isEqualTo(OrderStatus.PAID);
+    }
+
+    @Test
+    void 결제_금액이_주문_금액과_다르면_예외가_발생하고_Toss_승인을_호출하지_않는다() {
+        Order order = Order.builder().user(newUser()).build();
+        order.addItem(OrderItem.builder().product(newProduct()).quantity(2).build());
+        PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key-1", 100);
+
+        given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderFacade.confirmPayment(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", OrderErrorCode.PAYMENT_AMOUNT_MISMATCH);
+
+        verifyNoInteractions(tossPaymentClient);
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CREATED);
     }
 
     @Test

@@ -7,7 +7,8 @@ import org.springframework.http.HttpStatus;
 public enum OrderErrorCode implements ErrorCode {
 
     INVALID_STATUS_TRANSITION(HttpStatus.CONFLICT, "현재 주문 상태에서는 처리할 수 없습니다."),
-    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다.");
+    ORDER_NOT_FOUND(HttpStatus.NOT_FOUND, "주문을 찾을 수 없습니다."),
+    PAYMENT_AMOUNT_MISMATCH(HttpStatus.CONFLICT, "결제 금액이 주문 금액과 일치하지 않습니다.");
 
     private final HttpStatus httpStatus;
     private final String message;

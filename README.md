@@ -37,7 +37,7 @@ docker-compose up -d
 | **ISSUE-08** | Backend / Domain | [재고보다 많은 수량으로 차감하면 재고가 음수가 됨](issues/ISSUE-08_product_stock_can_go_negative.md) | `CLOSED` |
 | **ISSUE-10** | Backend / JPA | [주문에 담은 상품이 저장 후 다시 조회하면 사라짐](issues/ISSUE-10_order_item_order_id_saved_as_null.md) | `CLOSED` |
 | **ISSUE-11** | Backend / Transaction | [주문 결제와 재고 차감이 응답에는 반영되지만 DB에는 저장되지 않음](issues/ISSUE-11_order_facade_payment_and_stock_not_persisted.md) | `CLOSED` |
-| **ISSUE-12** | Backend / Payment | [결제 승인 처리 시 실제 결제 금액을 서버가 검증하지 않음](issues/ISSUE-12_payment_confirm_trusts_toss_response_without_amount_verification.md) | `OPEN` |
+| **ISSUE-12** | Backend / Payment | [결제 승인 처리 시 실제 결제 금액을 서버가 검증하지 않음](issues/ISSUE-12_payment_confirm_trusts_toss_response_without_amount_verification.md) | `CLOSED` |
 
 > 발생한 이슈는 `issues/ISSUE-{번호}_{버그명}.md`에 기록되며, 해결 완료 시 이 표가 갱신됩니다.
 
