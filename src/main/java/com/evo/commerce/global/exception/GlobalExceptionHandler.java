@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.stream.Collectors;
 
@@ -37,11 +38,17 @@ public class GlobalExceptionHandler {
                 .body(ApiResponse.fail(errorCode.getMessage()));
     }
 
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException e, HttpServletRequest request) {
+        log.debug("[Resource Not Found] URI: {}", request.getRequestURI());
+
+        return ResponseEntity.status(CommonErrorCode.RESOURCE_NOT_FOUND.getHttpStatus())
+                .body(ApiResponse.fail(CommonErrorCode.RESOURCE_NOT_FOUND.getMessage()));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception e, HttpServletRequest request) {
         log.error("[Unhandled Error] URI: {}", request.getRequestURI(), e);
-
-        System.out.println("앙기모띠");
 
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(ApiResponse.fail(CommonErrorCode.INTERNAL_SERVER_ERROR.getMessage()));
