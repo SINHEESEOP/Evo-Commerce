@@ -1,0 +1,24 @@
+package com.evo.commerce.domain.order.domain;
+
+import com.evo.commerce.domain.product.domain.Product;
+import org.junit.jupiter.api.Test;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static com.evo.commerce.domain.order.domain.OrderTestFixtures.newProduct;
+
+class OrderItemTest {
+
+    @Test
+    void 상품으로_주문_아이템을_생성하면_상품_스냅샷을_저장한다() {
+        Product product = newProduct();
+
+        OrderItem orderItem = OrderItem.builder()
+                .product(product)
+                .quantity(3)
+                .build();
+
+        assertThat(orderItem.getProductSnapshot().productName()).isEqualTo("테스트 상품");
+        assertThat(orderItem.getProductSnapshot().unitPrice()).isEqualTo(10000);
+        assertThat(orderItem.getQuantity()).isEqualTo(3);
+    }
+}

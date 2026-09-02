@@ -1,6 +1,6 @@
 package com.evo.commerce.global.auth;
 
-import com.evo.commerce.domain.user.UserRole;
+import com.evo.commerce.domain.user.domain.UserRole;
 import com.evo.commerce.global.auth.support.ProtectedSampleController;
 import com.evo.commerce.global.config.WebMvcConfig;
 import org.junit.jupiter.api.Test;

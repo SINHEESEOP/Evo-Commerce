@@ -1,6 +1,6 @@
 package com.evo.commerce.domain.order.dto;
 
-import com.evo.commerce.domain.order.OrderStatus;
+import com.evo.commerce.domain.order.domain.OrderStatus;
 
 import java.util.List;
 

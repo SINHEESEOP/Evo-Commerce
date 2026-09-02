@@ -1,6 +1,6 @@
 package com.evo.commerce.global.auth;
 
-import com.evo.commerce.domain.user.UserRole;
+import com.evo.commerce.domain.user.domain.UserRole;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;

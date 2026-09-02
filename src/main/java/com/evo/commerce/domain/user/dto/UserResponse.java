@@ -1,6 +1,6 @@
 package com.evo.commerce.domain.user.dto;
 
-import com.evo.commerce.domain.user.UserRole;
+import com.evo.commerce.domain.user.domain.UserRole;
 
 public record UserResponse(
         Long id,
