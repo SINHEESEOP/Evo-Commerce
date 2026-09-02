@@ -13,6 +13,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -29,11 +30,14 @@ class NotificationEventListenerTest {
     @Mock
     UserRepository userRepository;
 
+    @Mock
+    SseEmitterRegistry sseEmitterRegistry;
+
     @InjectMocks
     NotificationEventListener notificationEventListener;
 
     @Test
-    void 결제완료_이벤트를_받으면_알림을_저장한다() {
+    void 결제완료_이벤트를_받으면_알림을_저장한다() throws Exception {
         User user = User.builder()
                 .email("tester@evo-commerce.com")
                 .password("encoded-password")
@@ -43,6 +47,7 @@ class NotificationEventListenerTest {
         OrderPaidEvent event = new OrderPaidEvent(1L, 1L);
 
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
+        given(sseEmitterRegistry.findByUserId(1L)).willReturn(List.of());
 
         notificationEventListener.handleOrderPaid(event);
 

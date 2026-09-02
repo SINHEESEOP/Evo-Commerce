@@ -9,6 +9,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.context.event.EventListener;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
+import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
+
+import java.io.IOException;
 
 @Component
 @RequiredArgsConstructor
@@ -16,10 +19,11 @@ public class NotificationEventListener {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
+    private final SseEmitterRegistry sseEmitterRegistry;
 
     @Async
     @EventListener
-    public void handleOrderPaid(OrderPaidEvent event) {
+    public void handleOrderPaid(OrderPaidEvent event) throws IOException {
         User user = userRepository.findById(event.userId())
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
@@ -29,5 +33,9 @@ public class NotificationEventListener {
                 .build();
 
         notificationRepository.save(notification);
+
+        for (SseEmitter emitter : sseEmitterRegistry.findByUserId(event.userId())) {
+            emitter.send(SseEmitter.event().name("notification").data(notification.getMessage()));
+        }
     }
 }
