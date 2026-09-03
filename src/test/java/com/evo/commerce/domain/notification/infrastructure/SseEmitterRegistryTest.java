@@ -1,4 +1,4 @@
-package com.evo.commerce.domain.notification.domain;
+package com.evo.commerce.domain.notification.infrastructure;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

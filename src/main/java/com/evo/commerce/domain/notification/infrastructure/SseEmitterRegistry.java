@@ -1,4 +1,4 @@
-package com.evo.commerce.domain.notification.domain;
+package com.evo.commerce.domain.notification.infrastructure;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;

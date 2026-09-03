@@ -2,7 +2,7 @@ package com.evo.commerce.domain.notification.application;
 
 import com.evo.commerce.domain.notification.domain.Notification;
 import com.evo.commerce.domain.notification.domain.NotificationRepository;
-import com.evo.commerce.domain.notification.domain.SseEmitterRegistry;
+import com.evo.commerce.domain.notification.infrastructure.SseEmitterRegistry;
 import com.evo.commerce.domain.order.domain.OrderPaidEvent;
 import com.evo.commerce.domain.user.domain.User;
 import com.evo.commerce.domain.user.domain.UserRepository;

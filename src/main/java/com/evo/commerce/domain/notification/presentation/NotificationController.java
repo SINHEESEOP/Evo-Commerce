@@ -1,6 +1,6 @@
 package com.evo.commerce.domain.notification.presentation;
 
-import com.evo.commerce.domain.notification.domain.SseEmitterRegistry;
+import com.evo.commerce.domain.notification.infrastructure.SseEmitterRegistry;
 import com.evo.commerce.global.auth.JwtAuthenticationFilter;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;

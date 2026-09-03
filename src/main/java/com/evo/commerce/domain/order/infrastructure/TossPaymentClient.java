@@ -1,4 +1,4 @@
-package com.evo.commerce.domain.order.domain;
+package com.evo.commerce.domain.order.infrastructure;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
