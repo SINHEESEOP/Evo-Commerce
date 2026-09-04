@@ -3,19 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <title>상품 목록 - Evo-Commerce</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<h1>상품 목록</h1>
-<ul id="product-list"></ul>
-<p id="result"></p>
+<nav>
+    <a class="brand" href="/index.html">Evo-Commerce</a>
+    <a href="/products.html">상품 목록</a>
+    <span class="spacer"></span>
+    <a href="/login.html" id="nav-login">로그인</a>
+    <a href="/signup.html" id="nav-signup">회원가입</a>
+    <a href="/product-register.html" id="nav-register" hidden>상품 등록</a>
+    <button id="nav-logout" hidden>로그아웃</button>
+</nav>
+<main>
+    <h1>상품 목록</h1>
+    <ul class="product-list" id="product-list"></ul>
+    <p id="result" class="message"></p>
+</main>
 
+<script src="/js/nav.js"></script>
 <script>
     (async function () {
         const token = localStorage.getItem('accessToken');
         const result = document.getElementById('result');
 
         if (!token) {
-            result.textContent = '로그인이 필요합니다.';
+            window.location.href = '/login.html';
             return;
         }
 
@@ -34,6 +47,7 @@
             });
         } else {
             result.textContent = `조회 실패: ${body.message}`;
+            result.classList.add('error');
         }
     })();
 </script>

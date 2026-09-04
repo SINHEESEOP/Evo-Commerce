@@ -3,20 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <title>로그인 - Evo-Commerce</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<h1>로그인</h1>
-<form id="login-form">
-    <div>
+<nav>
+    <a class="brand" href="/index.html">Evo-Commerce</a>
+    <a href="/products.html">상품 목록</a>
+    <span class="spacer"></span>
+    <a href="/login.html" id="nav-login">로그인</a>
+    <a href="/signup.html" id="nav-signup">회원가입</a>
+    <a href="/product-register.html" id="nav-register" hidden>상품 등록</a>
+    <button id="nav-logout" hidden>로그아웃</button>
+</nav>
+<main>
+    <a class="back-link" href="/index.html">← 홈으로</a>
+    <h1>로그인</h1>
+    <form id="login-form">
         <label>이메일 <input type="email" id="email" required></label>
-    </div>
-    <div>
         <label>비밀번호 <input type="password" id="password" required></label>
-    </div>
-    <button type="submit">로그인</button>
-</form>
-<p id="result"></p>
+        <button type="submit">로그인</button>
+    </form>
+    <p id="result" class="message"></p>
+</main>
 
+<script src="/js/nav.js"></script>
 <script>
     document.getElementById('login-form').addEventListener('submit', async function (event) {
         event.preventDefault();
@@ -35,9 +45,14 @@
 
         if (response.ok && body.success) {
             localStorage.setItem('accessToken', body.data.token);
-            result.textContent = `${body.data.user.name}님, 환영합니다.`;
+            result.textContent = `${body.data.user.name}님, 환영합니다. 상품 목록으로 이동합니다.`;
+            result.classList.remove('error');
+            setTimeout(function () {
+                window.location.href = '/products.html';
+            }, 600);
         } else {
             result.textContent = `로그인 실패: ${body.message}`;
+            result.classList.add('error');
         }
     });
 </script>

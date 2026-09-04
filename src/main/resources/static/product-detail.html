@@ -3,19 +3,39 @@
 <head>
     <meta charset="UTF-8">
     <title>상품 상세 - Evo-Commerce</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<h1>상품 상세</h1>
-<dl id="product-detail"></dl>
-<p id="result"></p>
+<nav>
+    <a class="brand" href="/index.html">Evo-Commerce</a>
+    <a href="/products.html">상품 목록</a>
+    <span class="spacer"></span>
+    <a href="/login.html" id="nav-login">로그인</a>
+    <a href="/signup.html" id="nav-signup">회원가입</a>
+    <a href="/product-register.html" id="nav-register" hidden>상품 등록</a>
+    <button id="nav-logout" hidden>로그아웃</button>
+</nav>
+<main>
+    <a class="back-link" href="/products.html">← 상품 목록으로</a>
+    <h1>상품 상세</h1>
+    <dl id="product-detail"></dl>
 
+    <div class="quantity-row">
+        <label>수량 <input type="number" id="quantity" value="1" min="1"></label>
+        <button type="button" class="primary-button" id="order-button">주문하기</button>
+    </div>
+
+    <p id="result" class="message"></p>
+</main>
+
+<script src="/js/nav.js"></script>
 <script>
     (async function () {
         const token = localStorage.getItem('accessToken');
         const result = document.getElementById('result');
 
         if (!token) {
-            result.textContent = '로그인이 필요합니다.';
+            window.location.href = '/login.html';
             return;
         }
 
@@ -27,16 +47,41 @@
 
         const body = await response.json();
 
-        if (response.ok && body.success) {
-            const detail = document.getElementById('product-detail');
-            detail.innerHTML = `
-                <dt>상품명</dt><dd>${body.data.name}</dd>
-                <dt>가격</dt><dd>${body.data.price}원</dd>
-                <dt>재고</dt><dd>${body.data.stock}개</dd>
-            `;
-        } else {
+        if (!response.ok || !body.success) {
             result.textContent = `조회 실패: ${body.message}`;
+            result.classList.add('error');
+            return;
         }
+
+        document.getElementById('product-detail').innerHTML = `
+            <dt>상품명</dt><dd>${body.data.name}</dd>
+            <dt>가격</dt><dd>${body.data.price}원</dd>
+            <dt>재고</dt><dd>${body.data.stock}개</dd>
+        `;
+
+        document.getElementById('order-button').addEventListener('click', async function () {
+            const quantity = Number(document.getElementById('quantity').value);
+
+            const orderResponse = await fetch('/api/orders', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    items: [{productId: Number(id), quantity: quantity}]
+                })
+            });
+
+            const orderBody = await orderResponse.json();
+
+            if (orderResponse.ok && orderBody.success) {
+                window.location.href = `/checkout.html?orderId=${orderBody.data.id}`;
+            } else {
+                result.textContent = `주문 실패: ${orderBody.message}`;
+                result.classList.add('error');
+            }
+        });
     })();
 </script>
 </body>

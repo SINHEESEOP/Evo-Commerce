@@ -3,13 +3,27 @@
 <head>
     <meta charset="UTF-8">
     <title>Evo-Commerce</title>
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-<h1>Evo-Commerce</h1>
-<ul>
-    <li><a href="/signup.html">회원가입</a></li>
-    <li><a href="/login.html">로그인</a></li>
-    <li><a href="/products.html">상품 목록</a></li>
-</ul>
+<nav>
+    <span class="brand">Evo-Commerce</span>
+    <a href="/products.html">상품 목록</a>
+    <span class="spacer"></span>
+    <a href="/login.html" id="nav-login">로그인</a>
+    <a href="/signup.html" id="nav-signup">회원가입</a>
+    <a href="/product-register.html" id="nav-register" hidden>상품 등록</a>
+    <button id="nav-logout" hidden>로그아웃</button>
+</nav>
+<main>
+    <h1>Evo-Commerce</h1>
+    <ul class="link-list">
+        <li><a href="/signup.html">회원가입</a></li>
+        <li><a href="/login.html">로그인</a></li>
+        <li><a href="/products.html">상품 목록</a></li>
+    </ul>
+</main>
+
+<script src="/js/nav.js"></script>
 </body>
 </html>

@@ -3,14 +3,28 @@
 <head>
     <meta charset="UTF-8">
     <title>결제 - Evo-Commerce</title>
+    <link rel="stylesheet" href="/css/style.css">
     <script src="https://js.tosspayments.com/v1/payment"></script>
 </head>
 <body>
-<h1>주문 결제</h1>
-<dl id="order-detail"></dl>
-<button id="pay-button">결제하기</button>
-<p id="result"></p>
+<nav>
+    <a class="brand" href="/index.html">Evo-Commerce</a>
+    <a href="/products.html">상품 목록</a>
+    <span class="spacer"></span>
+    <a href="/login.html" id="nav-login">로그인</a>
+    <a href="/signup.html" id="nav-signup">회원가입</a>
+    <a href="/product-register.html" id="nav-register" hidden>상품 등록</a>
+    <button id="nav-logout" hidden>로그아웃</button>
+</nav>
+<main>
+    <a class="back-link" href="/products.html">← 상품 목록으로</a>
+    <h1>주문 결제</h1>
+    <dl id="order-detail"></dl>
+    <button class="primary-button" id="pay-button">결제하기</button>
+    <p id="result" class="message"></p>
+</main>
 
+<script src="/js/nav.js"></script>
 <script>
     (async function () {
         const clientKey = 'test_ck_4yKeq5bgrpeKP029mLPZ8GX0lzW6';
@@ -18,7 +32,7 @@
         const result = document.getElementById('result');
 
         if (!token) {
-            result.textContent = '로그인이 필요합니다.';
+            window.location.href = '/login.html';
             return;
         }
 
@@ -32,6 +46,7 @@
 
         if (!response.ok || !body.success) {
             result.textContent = `주문 조회 실패: ${body.message}`;
+            result.classList.add('error');
             return;
         }
 
