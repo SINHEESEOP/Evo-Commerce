@@ -27,10 +27,12 @@
 - 두 메서드 모두 "주문 조회 → 재고 차감 → `order.pay()` → 이벤트 발행" 순서가 거의 동일해 보여서, 부수 효과 하나가 한쪽에만 구현돼 있다는 사실이 코드를 훑어보는 것만으로는 잘 드러나지 않는다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(추후 작성)
+`OrderFacade`에는 주문을 `PAID`로 전환하는 진입점이 두 개(`confirmPayment()`, `handlePaymentWebhook()`) 있는데, `Payment` 저장 호출이 `confirmPayment()`를 구현하면서 그 메서드 본문에만 추가되고 `handlePaymentWebhook()`에는 반영되지 않았다. 두 메서드가 "주문 조회 → 조건 확인 → 재고 차감 → `order.pay()` → 이벤트 발행"이라는 거의 동일한 구조를 갖고 있어서, 부수 효과 하나가 한쪽에만 있다는 사실이 코드를 눈으로 훑는 것만으로는 드러나지 않았다.
 
 ### 해결 방안
-(추후 작성)
+재고 차감·주문 상태 전이·`Payment` 저장·이벤트 발행을 하나의 `markOrderAsPaid(order, paymentKey, method, amount, approvedAt)` 메서드로 추출해 `confirmPayment()`와 `handlePaymentWebhook()` 양쪽이 동일하게 호출하도록 통일했다. 웹훅 경로에 필요한 `method`/`totalAmount`/`approvedAt` 값은 별도 조회 API 없이, Toss가 `PAYMENT_STATUS_CHANGED` 웹훅 본문에 이미 포함해 보내는 값을 그대로 `TossWebhookRequest.Data`에 추가해 사용했다.
+
+부가적으로, 두 진입점 모두 애플리케이션 로직(주문 상태 가드)만으로 중복 저장을 막고 있어 경쟁 상황에 대한 마지막 방어선이 없었다는 점을 검토 과정에서 확인해, `Payment.paymentKey`에 `@Column(unique = true)` 제약을 추가했다. 자세한 검토 근거는 `docs/bug_intents/Step_2.11_질문답변.md` 참고.

@@ -28,6 +28,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.OffsetDateTime;
+
 @Service
 @RequiredArgsConstructor
 public class OrderFacade {
@@ -78,18 +80,7 @@ public class OrderFacade {
 
         TossPaymentConfirmResponse tossResponse = tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
 
-        decreaseStockForItems(order);
-        order.pay();
-
-        paymentRepository.save(Payment.builder()
-                .order(order)
-                .paymentKey(tossResponse.paymentKey())
-                .method(tossResponse.method())
-                .amount(tossResponse.totalAmount())
-                .approvedAt(tossResponse.approvedAt().toLocalDateTime())
-                .build());
-
-        eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
+        markOrderAsPaid(order, tossResponse.paymentKey(), tossResponse.method(), tossResponse.totalAmount(), tossResponse.approvedAt());
 
         return OrderMapper.toResponse(order);
     }
@@ -106,8 +97,22 @@ public class OrderFacade {
             return;
         }
 
+        TossWebhookRequest.Data data = request.data();
+        markOrderAsPaid(order, data.paymentKey(), data.method(), data.totalAmount(), data.approvedAt());
+    }
+
+    private void markOrderAsPaid(Order order, String paymentKey, String method, int amount, OffsetDateTime approvedAt) {
         decreaseStockForItems(order);
         order.pay();
+
+        paymentRepository.save(Payment.builder()
+                .order(order)
+                .paymentKey(paymentKey)
+                .method(method)
+                .amount(amount)
+                .approvedAt(approvedAt.toLocalDateTime())
+                .build());
+
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
     }
 

@@ -161,6 +161,8 @@ class OrderFacadeTest {
         PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key-1", 20000);
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+        given(tossPaymentClient.confirm("payment-key-1", 1L, 20000))
+                .willReturn(new TossPaymentConfirmResponse("payment-key-1", "ORDER-1", "카드", 20000, OffsetDateTime.now()));
 
         assertThatThrownBy(() -> orderFacade.confirmPayment(1L, request))
                 .isInstanceOf(BusinessException.class)
@@ -198,12 +200,14 @@ class OrderFacadeTest {
     }
 
     @Test
-    void 결제완료_웹훅을_받으면_주문_상태가_PAID로_변경된다() {
+    void 결제완료_웹훅을_받으면_주문_상태가_PAID로_변경되고_결제_기록이_저장된다() {
+        Product product = newProduct();
         Order order = Order.builder().user(newUser()).build();
-        order.addItem(OrderItem.builder().product(newProduct()).quantity(2).build());
+        order.addItem(OrderItem.builder().product(product).quantity(2).build());
+        OffsetDateTime approvedAt = OffsetDateTime.now();
         TossWebhookRequest request = new TossWebhookRequest(
                 "PAYMENT_STATUS_CHANGED",
-                new TossWebhookRequest.Data("payment-key-1", "ORDER-1", "DONE")
+                new TossWebhookRequest.Data("payment-key-1", "ORDER-1", "DONE", "카드", 20000, approvedAt)
         );
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));
@@ -211,7 +215,16 @@ class OrderFacadeTest {
         orderFacade.handlePaymentWebhook(request);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
+        assertThat(product.getStock()).isEqualTo(8);
         verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
+
+        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(paymentCaptor.capture());
+        Payment savedPayment = paymentCaptor.getValue();
+        assertThat(savedPayment.getPaymentKey()).isEqualTo("payment-key-1");
+        assertThat(savedPayment.getMethod()).isEqualTo("카드");
+        assertThat(savedPayment.getAmount()).isEqualTo(20000);
+        assertThat(savedPayment.getApprovedAt()).isEqualTo(approvedAt.toLocalDateTime());
     }
 
     @Test
@@ -221,7 +234,7 @@ class OrderFacadeTest {
         order.pay();
         TossWebhookRequest request = new TossWebhookRequest(
                 "PAYMENT_STATUS_CHANGED",
-                new TossWebhookRequest.Data("payment-key-1", "ORDER-1", "DONE")
+                new TossWebhookRequest.Data("payment-key-1", "ORDER-1", "DONE", "카드", 20000, OffsetDateTime.now())
         );
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));
@@ -230,5 +243,6 @@ class OrderFacadeTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
         verifyNoInteractions(eventPublisher);
+        verifyNoInteractions(paymentRepository);
     }
 }
