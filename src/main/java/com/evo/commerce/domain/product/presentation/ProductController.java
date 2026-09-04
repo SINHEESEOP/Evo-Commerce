@@ -3,6 +3,7 @@ package com.evo.commerce.domain.product.presentation;
 import com.evo.commerce.domain.product.application.ProductService;
 import com.evo.commerce.domain.product.dto.ProductCreateRequest;
 import com.evo.commerce.domain.product.dto.ProductResponse;
+import com.evo.commerce.global.auth.RequireRole;
 import com.evo.commerce.global.response.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class ProductController {
     }
 
     @PostMapping
+    @RequireRole("MASTER")
     public ApiResponse<ProductResponse> registerProduct(@Valid @RequestBody ProductCreateRequest request) {
         return ApiResponse.success(productService.registerProduct(request));
     }

@@ -41,8 +41,8 @@ class ProductControllerTest {
     ProductService productService;
 
     @Test
-    void 로그인한_사용자는_상품을_등록할_수_있다() throws Exception {
-        String token = jwtTokenProvider.createToken(1L, UserRole.USER);
+    void MASTER_권한이_있으면_상품을_등록할_수_있다() throws Exception {
+        String token = jwtTokenProvider.createToken(1L, UserRole.MASTER);
         ProductCreateRequest request = new ProductCreateRequest("새 상품", 15000, 20);
         ProductResponse response = new ProductResponse(1L, request.name(), request.price(), request.stock());
 
@@ -55,5 +55,18 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.name").value(request.name()));
+    }
+
+    @Test
+    void MASTER_권한이_없으면_상품_등록에_실패한다() throws Exception {
+        String token = jwtTokenProvider.createToken(1L, UserRole.USER);
+        ProductCreateRequest request = new ProductCreateRequest("새 상품", 15000, 20);
+
+        mockMvc.perform(post("/api/products")
+                        .header("Authorization", "Bearer " + token)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.success").value(false));
     }
 }
