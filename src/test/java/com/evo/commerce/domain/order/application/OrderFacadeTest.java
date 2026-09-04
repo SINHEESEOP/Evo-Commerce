@@ -76,7 +76,7 @@ class OrderFacadeTest {
         assertThat(response.status()).isEqualTo(OrderStatus.CREATED);
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).quantity()).isEqualTo(2);
-        assertThat(product.getStock()).isEqualTo(8);
+        assertThat(product.getStock()).isEqualTo(10);
     }
 
     @Test
@@ -118,9 +118,10 @@ class OrderFacadeTest {
     }
 
     @Test
-    void 결제_승인에_성공하면_주문_상태가_PAID로_변경된다() {
+    void 결제_승인에_성공하면_주문_상태가_PAID로_변경되고_그_시점에_재고가_차감된다() {
+        Product product = newProduct();
         Order order = Order.builder().user(newUser()).build();
-        order.addItem(OrderItem.builder().product(newProduct()).quantity(2).build());
+        order.addItem(OrderItem.builder().product(product).quantity(2).build());
         PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key-1", 20000);
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));
@@ -128,7 +129,26 @@ class OrderFacadeTest {
         OrderResponse response = orderFacade.confirmPayment(1L, request);
 
         assertThat(response.status()).isEqualTo(OrderStatus.PAID);
+        assertThat(product.getStock()).isEqualTo(8);
         verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
+    }
+
+    @Test
+    void 결제_승인_시점에_재고가_부족하면_예외가_발생하고_주문_상태는_그대로다() {
+        Product product = newProduct();
+        Order order = Order.builder().user(newUser()).build();
+        order.addItem(OrderItem.builder().product(product).quantity(2).build());
+        product.decreaseStock(9);
+        PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key-1", 20000);
+
+        given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+
+        assertThatThrownBy(() -> orderFacade.confirmPayment(1L, request))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ProductErrorCode.INSUFFICIENT_STOCK);
+
+        assertThat(order.getStatus()).isEqualTo(OrderStatus.CREATED);
+        verifyNoInteractions(eventPublisher);
     }
 
     @Test

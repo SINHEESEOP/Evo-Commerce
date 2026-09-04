@@ -53,13 +53,21 @@ public class Product {
     }
 
     public void decreaseStock(int quantity) {
+        validatePositive(quantity);
+        validateStockAvailable(quantity);
+        this.stock -= quantity;
+    }
+
+    private static void validatePositive(int quantity) {
         if (quantity <= 0) {
             throw new IllegalArgumentException("차감 수량은 0보다 커야 합니다.");
         }
+    }
+
+    public void validateStockAvailable(int quantity) {
         if (this.stock < quantity) {
             throw new BusinessException(ProductErrorCode.INSUFFICIENT_STOCK);
         }
-        this.stock -= quantity;
     }
 
     @Override
