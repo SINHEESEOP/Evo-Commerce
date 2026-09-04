@@ -52,6 +52,10 @@
             body: JSON.stringify({paymentKey: paymentKey, amount: Number(amount)})
         });
 
+        if (handleUnauthorized(response)) {
+            return;
+        }
+
         const body = await response.json();
 
         if (response.ok && body.success) {

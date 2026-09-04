@@ -45,6 +45,10 @@
             headers: {'Authorization': `Bearer ${token}`}
         });
 
+        if (handleUnauthorized(response)) {
+            return;
+        }
+
         const body = await response.json();
 
         if (!response.ok || !body.success) {
@@ -76,6 +80,10 @@
                     items: [{productId: Number(id), quantity: quantity}]
                 })
             });
+
+            if (handleUnauthorized(orderResponse)) {
+                return;
+            }
 
             const orderBody = await orderResponse.json();
 

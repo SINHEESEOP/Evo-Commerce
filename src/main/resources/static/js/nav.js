@@ -22,4 +22,14 @@
             window.location.href = '/login.html';
         });
     }
+
+    window.handleUnauthorized = function (response) {
+        if (response.status !== 401) {
+            return false;
+        }
+        localStorage.removeItem('accessToken');
+        localStorage.removeItem('role');
+        window.location.href = '/login.html';
+        return true;
+    };
 })();
