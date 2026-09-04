@@ -6,6 +6,7 @@ import com.evo.commerce.domain.order.domain.OrderItem;
 import com.evo.commerce.domain.order.domain.OrderRepository;
 import com.evo.commerce.domain.order.domain.OrderStatus;
 import com.evo.commerce.domain.order.dto.TossWebhookRequest;
+import com.evo.commerce.domain.payment.domain.PaymentRepository;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductRepository;
 import com.evo.commerce.domain.user.domain.User;
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -39,6 +42,9 @@ class OrderPaidEventAsyncFailureTest {
     @Autowired
     UserRepository userRepository;
 
+    @Autowired
+    PaymentRepository paymentRepository;
+
     @MockitoBean
     NotificationRepository notificationRepository;
 
@@ -49,6 +55,7 @@ class OrderPaidEventAsyncFailureTest {
     @AfterEach
     void cleanUp() {
         if (orderId != null) {
+            paymentRepository.deleteByOrder_Id(orderId);
             orderRepository.deleteById(orderId);
         }
         if (productId != null) {
@@ -85,7 +92,7 @@ class OrderPaidEventAsyncFailureTest {
 
         TossWebhookRequest request = new TossWebhookRequest(
                 "PAYMENT_STATUS_CHANGED",
-                new TossWebhookRequest.Data("payment-key-1", "ORDER-" + orderId, "DONE")
+                new TossWebhookRequest.Data("payment-key-1", "ORDER-" + orderId, "DONE", "카드", 10000, OffsetDateTime.now())
         );
 
         assertThatCode(() -> orderFacade.handlePaymentWebhook(request)).doesNotThrowAnyException();
