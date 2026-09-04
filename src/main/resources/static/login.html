@@ -3,6 +3,11 @@
 <head>
     <meta charset="UTF-8">
     <title>로그인 - Evo-Commerce</title>
+    <script>
+        if (localStorage.getItem('accessToken')) {
+            window.location.replace('/products.html');
+        }
+    </script>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>

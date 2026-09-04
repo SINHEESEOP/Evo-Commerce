@@ -36,6 +36,10 @@
             headers: {'Authorization': `Bearer ${token}`}
         });
 
+        if (handleUnauthorized(response)) {
+            return;
+        }
+
         const body = await response.json();
 
         if (response.ok && body.success) {
