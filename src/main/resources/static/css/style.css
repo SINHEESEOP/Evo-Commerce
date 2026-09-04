@@ -329,8 +329,19 @@ dd {
     margin-bottom: 16px;
 }
 
+.quantity-row label {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+}
+
 .quantity-row input {
     width: 80px;
+}
+
+.quantity-row .primary-button {
+    align-self: center;
 }
 
 ul.link-list {
