@@ -3,6 +3,7 @@ package com.evo.commerce.domain.product.application;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductMapper;
 import com.evo.commerce.domain.product.domain.ProductRepository;
+import com.evo.commerce.domain.product.dto.ProductCreateRequest;
 import com.evo.commerce.domain.product.dto.ProductResponse;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.ProductErrorCode;
@@ -27,5 +28,16 @@ public class ProductService {
         Product product = productRepository.findById(id)
                 .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
         return ProductMapper.toResponse(product);
+    }
+
+    public ProductResponse registerProduct(ProductCreateRequest request) {
+        Product product = Product.builder()
+                .name(request.name())
+                .price(request.price())
+                .stock(request.stock())
+                .build();
+
+        Product saved = productRepository.save(product);
+        return ProductMapper.toResponse(saved);
     }
 }
