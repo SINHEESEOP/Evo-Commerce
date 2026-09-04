@@ -9,8 +9,11 @@ import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
 import com.evo.commerce.domain.order.dto.PaymentConfirmRequest;
+import com.evo.commerce.domain.order.dto.TossPaymentConfirmResponse;
 import com.evo.commerce.domain.order.dto.TossWebhookRequest;
 import com.evo.commerce.domain.order.infrastructure.TossPaymentClient;
+import com.evo.commerce.domain.payment.domain.Payment;
+import com.evo.commerce.domain.payment.domain.PaymentRepository;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductRepository;
 import com.evo.commerce.domain.user.domain.User;
@@ -21,12 +24,14 @@ import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -50,6 +55,9 @@ class OrderFacadeTest {
 
     @Mock
     UserRepository userRepository;
+
+    @Mock
+    PaymentRepository paymentRepository;
 
     @Mock
     TossPaymentClient tossPaymentClient;
@@ -123,14 +131,25 @@ class OrderFacadeTest {
         Order order = Order.builder().user(newUser()).build();
         order.addItem(OrderItem.builder().product(product).quantity(2).build());
         PaymentConfirmRequest request = new PaymentConfirmRequest("payment-key-1", 20000);
+        OffsetDateTime approvedAt = OffsetDateTime.now();
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));
+        given(tossPaymentClient.confirm("payment-key-1", 1L, 20000))
+                .willReturn(new TossPaymentConfirmResponse("payment-key-1", "ORDER-1", "카드", 20000, approvedAt));
 
         OrderResponse response = orderFacade.confirmPayment(1L, request);
 
         assertThat(response.status()).isEqualTo(OrderStatus.PAID);
         assertThat(product.getStock()).isEqualTo(8);
         verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
+
+        ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
+        verify(paymentRepository).save(paymentCaptor.capture());
+        Payment savedPayment = paymentCaptor.getValue();
+        assertThat(savedPayment.getPaymentKey()).isEqualTo("payment-key-1");
+        assertThat(savedPayment.getMethod()).isEqualTo("카드");
+        assertThat(savedPayment.getAmount()).isEqualTo(20000);
+        assertThat(savedPayment.getApprovedAt()).isEqualTo(approvedAt.toLocalDateTime());
     }
 
     @Test

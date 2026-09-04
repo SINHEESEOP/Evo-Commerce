@@ -1,7 +1,7 @@
 # Order 도메인 설계와 Toss 결제 연동 흐름
 
 ## 개요
-Order, OrderItem 두 도메인의 ERD와 주문 상태 설계, Toss Payments 연동 흐름을 정리한다. 인증된 사용자만 주문을 생성할 수 있다고 가정한다. 결제 완료 이후의 비동기 알림/이벤트 처리는 결제 흐름 자체가 확정된 다음 별도 문서에서 다룬다.
+Order, OrderItem, Payment 세 도메인의 ERD와 주문 상태 설계, Toss Payments 연동 흐름을 정리한다. 인증된 사용자만 주문을 생성할 수 있다고 가정한다. 결제 완료 이후의 비동기 알림/이벤트 처리는 결제 흐름 자체가 확정된 다음 별도 문서에서 다룬다.
 
 ## ERD
 
@@ -9,6 +9,7 @@ Order, OrderItem 두 도메인의 ERD와 주문 상태 설계, Toss Payments 연
 erDiagram
     USERS ||--o{ ORDERS : places
     ORDERS ||--o{ ORDER_ITEMS : contains
+    ORDERS ||--o{ PAYMENTS : has
     PRODUCTS ||--o{ ORDER_ITEMS : referenced_by
 
     ORDERS {
@@ -26,6 +27,16 @@ erDiagram
         VARCHAR product_name
         DECIMAL unit_price
         INT quantity
+        DATETIME created_at
+    }
+
+    PAYMENTS {
+        BIGINT id PK
+        BIGINT order_id FK
+        VARCHAR payment_key
+        VARCHAR method
+        INT amount
+        DATETIME approved_at
         DATETIME created_at
     }
 ```
@@ -67,6 +78,22 @@ stateDiagram-v2
 
 `product_name`과 `unit_price`는 각각의 컬럼으로 나열하기보다, 엔티티 구현 단계에서 두 값을 하나의 불변 값 객체(예: 주문 시점 스냅샷을 표현하는 VO)로 묶는 것을 검토한다. 두 값은 "주문 시점에 함께 확정되고 이후 절대 개별적으로 바뀌지 않는다"는 하나의 개념을 이루므로, 별개 필드보다 하나의 값 객체로 다루는 쪽이 불변성을 코드로 더 명확히 드러낸다.
 
+## Payment 도메인 설계
+
+| 컬럼 | 타입 | 설명 |
+|------|------|------|
+| id | BIGINT (PK, AUTO_INCREMENT) | |
+| order_id | BIGINT (FK → orders.id) | 결제가 이루어진 주문 |
+| payment_key | VARCHAR(200) | Toss가 발급한 PG 거래 고유 식별자 |
+| method | VARCHAR(50) | 결제수단(카드, 계좌이체 등), Toss 승인 응답 기준 |
+| amount | INT | Toss가 실제로 승인한 금액 |
+| approved_at | DATETIME | Toss 승인 시각 |
+| created_at | DATETIME | Payment 레코드 저장 시각 |
+
+`Order`는 "무엇을 얼마에 주문했는가"를 표현하고, `Payment`는 "그 대금을 실제로 어떻게 지불받았는가"를 표현한다. 지금까지는 `orders.status`가 `PAID`로 바뀌는 것만으로 결제 완료를 표현해왔는데, 이 값만으로는 PG사가 실제로 어떤 수단으로 얼마를 언제 승인했는지 알 수 없다. 영수증 조회, 정산, 환불 같은 후속 처리는 모두 "그 결제 건 자체"에 대한 정보가 필요하므로, `Order`의 상태 필드가 아니라 별도 엔티티로 분리해서 저장한다.
+
+`payment_key`는 Toss 승인 API 호출 시 서버가 이미 보유하고 있는 값(클라이언트가 결제창에서 넘겨준 값)이지만, 승인 응답이 성공한 뒤 Toss가 실제로 확인해 준 `method`, `amount`, `approved_at`은 응답 바디에서 가져온 값을 그대로 저장한다. 클라이언트가 요청에 실어 보낸 금액이 아니라 Toss가 승인 응답으로 돌려준 금액을 저장해야, "우리가 승인을 요청한 금액"과 "PG사가 실제로 승인한 금액"이 다른 경우에도 이 테이블이 실제 승인 결과를 정확히 반영한다.
+
 ## Toss Payments 연동 흐름
 
 1. 클라이언트가 주문 생성 API를 호출한다. 서버는 `Order`를 `CREATED` 상태로 만들고 주문 식별자를 발급한다.
@@ -74,9 +101,9 @@ stateDiagram-v2
 3. 사용자가 결제를 완료하면 Toss가 설정된 성공 URL로 리다이렉트하면서 `paymentKey`, 주문 식별자, 결제 금액을 함께 넘겨준다.
 4. 클라이언트가 이 값들을 그대로 서버의 결제 승인 API로 전달한다.
 5. 서버는 전달받은 `paymentKey`, 주문 식별자, 금액으로 Toss 결제 승인 API(`POST /v1/payments/confirm`)를 호출한다.
-6. 승인 API 응답이 성공이면 서버는 `Order` 상태를 `PAID`로 변경한다. 실패하면 `CANCELLED`로 변경한다.
+6. 승인 API 응답이 성공이면 서버는 `Order` 상태를 `PAID`로 변경하고, 응답 바디에 담긴 `paymentKey`/결제수단/승인금액/승인시각으로 `Payment` 레코드를 생성한다. 실패하면 `Order`는 `CANCELLED`로 변경하고 `Payment`는 생성하지 않는다.
 
-Toss는 결제 승인 API 응답과는 별도로 웹훅을 통해서도 결제 상태를 통지할 수 있다. 이 설계에서는 승인 API 응답 경로만 다루며, 웹훅 수신 처리와 두 경로가 동시에 들어올 때의 정합성 문제는 다루지 않는다.
+Toss는 결제 승인 API 응답과는 별도로 웹훅을 통해서도 결제 상태를 통지할 수 있다. 어느 경로로 결제 완료를 통지받든 `Order` 상태 전이와 `Payment` 레코드 생성은 함께 이루어져야 한다. 이 설계에서는 승인 API 응답 경로를 기준으로 흐름을 정리하며, 웹훅 경로와 두 경로가 동시에 들어올 때의 정합성 문제는 다루지 않는다.
 
 결제 승인 응답으로 `Order.pay()`가 호출되는 시점과, 같은 주문에 대해 사용자가 `Order.cancel()`을 동시에 요청하는 시점이 겹치는 경쟁 조건도 이 설계에서는 다루지 않는다. 상태 전이 가드는 순차적으로 호출됐을 때 잘못된 전이를 막아주지만, 두 요청이 동시에 같은 `Order` 행을 읽고 쓰는 상황에서 최종 상태가 무엇이 되는지는 별도의 락 전략(비관적 락/낙관적 락/분산 락) 선택이 필요한 문제라, 이 문서에서는 다루지 않는다.
 

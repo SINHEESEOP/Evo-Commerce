@@ -10,8 +10,11 @@ import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
 import com.evo.commerce.domain.order.dto.PaymentConfirmRequest;
+import com.evo.commerce.domain.order.dto.TossPaymentConfirmResponse;
 import com.evo.commerce.domain.order.dto.TossWebhookRequest;
 import com.evo.commerce.domain.order.infrastructure.TossPaymentClient;
+import com.evo.commerce.domain.payment.domain.Payment;
+import com.evo.commerce.domain.payment.domain.PaymentRepository;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductRepository;
 import com.evo.commerce.domain.user.domain.User;
@@ -32,6 +35,7 @@ public class OrderFacade {
     private final OrderRepository orderRepository;
     private final ProductRepository productRepository;
     private final UserRepository userRepository;
+    private final PaymentRepository paymentRepository;
     private final TossPaymentClient tossPaymentClient;
     private final ApplicationEventPublisher eventPublisher;
 
@@ -72,10 +76,19 @@ public class OrderFacade {
             throw new BusinessException(OrderErrorCode.PAYMENT_AMOUNT_MISMATCH);
         }
 
-        tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
+        TossPaymentConfirmResponse tossResponse = tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
 
         decreaseStockForItems(order);
         order.pay();
+
+        paymentRepository.save(Payment.builder()
+                .order(order)
+                .paymentKey(tossResponse.paymentKey())
+                .method(tossResponse.method())
+                .amount(tossResponse.totalAmount())
+                .approvedAt(tossResponse.approvedAt().toLocalDateTime())
+                .build());
+
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
 
         return OrderMapper.toResponse(order);
