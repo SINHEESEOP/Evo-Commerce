@@ -1,5 +1,6 @@
 package com.evo.commerce.domain.order.infrastructure;
 
+import com.evo.commerce.domain.order.dto.TossPaymentConfirmResponse;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
@@ -21,10 +22,10 @@ public class TossPaymentClient {
         this.restClient = RestClient.create("https://api.tosspayments.com");
     }
 
-    public void confirm(String paymentKey, Long orderId, int amount) {
+    public TossPaymentConfirmResponse confirm(String paymentKey, Long orderId, int amount) {
         String encodedAuth = Base64.getEncoder().encodeToString((secretKey + ":").getBytes());
 
-        restClient.post()
+        return restClient.post()
                 .uri("/v1/payments/confirm")
                 .header("Authorization", "Basic " + encodedAuth)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -34,7 +35,7 @@ public class TossPaymentClient {
                         "amount", amount
                 ))
                 .retrieve()
-                .toBodilessEntity();
+                .body(TossPaymentConfirmResponse.class);
     }
 
     public static String toTossOrderId(Long orderId) {
