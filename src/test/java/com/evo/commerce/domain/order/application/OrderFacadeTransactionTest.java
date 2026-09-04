@@ -54,7 +54,7 @@ class OrderFacadeTransactionTest {
     }
 
     @Test
-    void 주문을_생성하면_재고_차감이_DB에도_반영된다() {
+    void 주문을_생성해도_결제_전에는_재고가_차감되지_않는다() {
         User user = userRepository.save(User.builder()
                 .email("order-tx-" + System.nanoTime() + "@evo-commerce.com")
                 .password("plain1234!")
@@ -77,6 +77,6 @@ class OrderFacadeTransactionTest {
         Product reloadedProduct = productRepository.findById(product.getId()).orElseThrow();
 
         assertThat(reloadedOrder.getStatus()).isEqualTo(OrderStatus.CREATED);
-        assertThat(reloadedProduct.getStock()).isEqualTo(8);
+        assertThat(reloadedProduct.getStock()).isEqualTo(10);
     }
 }

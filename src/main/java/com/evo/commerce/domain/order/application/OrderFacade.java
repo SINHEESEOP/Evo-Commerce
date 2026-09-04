@@ -46,7 +46,7 @@ public class OrderFacade {
             Product product = productRepository.findById(itemRequest.productId())
                     .orElseThrow(() -> new BusinessException(ProductErrorCode.PRODUCT_NOT_FOUND));
 
-            product.decreaseStock(itemRequest.quantity());
+            product.validateStockAvailable(itemRequest.quantity());
 
             order.addItem(OrderItem.builder()
                     .product(product)
@@ -74,6 +74,7 @@ public class OrderFacade {
 
         tossPaymentClient.confirm(request.paymentKey(), orderId, request.amount());
 
+        decreaseStockForItems(order);
         order.pay();
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
 
@@ -92,8 +93,15 @@ public class OrderFacade {
             return;
         }
 
+        decreaseStockForItems(order);
         order.pay();
         eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
+    }
+
+    private void decreaseStockForItems(Order order) {
+        for (OrderItem orderItem : order.getOrderItems()) {
+            orderItem.getProduct().decreaseStock(orderItem.getQuantity());
+        }
     }
 
     private Order findOrderOrThrow(Long orderId) {

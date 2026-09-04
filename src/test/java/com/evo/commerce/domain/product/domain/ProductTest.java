@@ -49,4 +49,22 @@ class ProductTest {
         assertThatThrownBy(() -> product.decreaseStock(0))
                 .isInstanceOf(IllegalArgumentException.class);
     }
+
+    @Test
+    void 재고_확인은_재고를_차감하지_않는다() {
+        Product product = newProduct(10);
+
+        product.validateStockAvailable(10);
+
+        assertThat(product.getStock()).isEqualTo(10);
+    }
+
+    @Test
+    void 재고보다_많은_수량을_확인하면_예외가_발생한다() {
+        Product product = newProduct(3);
+
+        assertThatThrownBy(() -> product.validateStockAvailable(10))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", ProductErrorCode.INSUFFICIENT_STOCK);
+    }
 }
