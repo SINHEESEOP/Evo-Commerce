@@ -164,7 +164,7 @@ class OrderFacadeTest {
         order.addItem(OrderItem.builder().product(newProduct()).quantity(2).build());
         TossWebhookRequest request = new TossWebhookRequest(
                 "PAYMENT_STATUS_CHANGED",
-                new TossWebhookRequest.Data("payment-key-1", "1", "DONE")
+                new TossWebhookRequest.Data("payment-key-1", "ORDER-1", "DONE")
         );
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));
@@ -182,7 +182,7 @@ class OrderFacadeTest {
         order.pay();
         TossWebhookRequest request = new TossWebhookRequest(
                 "PAYMENT_STATUS_CHANGED",
-                new TossWebhookRequest.Data("payment-key-1", "1", "DONE")
+                new TossWebhookRequest.Data("payment-key-1", "ORDER-1", "DONE")
         );
 
         given(orderRepository.findById(1L)).willReturn(Optional.of(order));

@@ -63,7 +63,7 @@
             const tossPayments = TossPayments(clientKey);
             tossPayments.requestPayment('카드', {
                 amount: order.totalAmount,
-                orderId: String(order.id),
+                orderId: `ORDER-${order.id}`,
                 orderName: orderName,
                 successUrl: `${window.location.origin}/checkout-result.html`,
                 failUrl: `${window.location.origin}/checkout-result.html`

@@ -82,7 +82,7 @@ public class OrderFacade {
 
     @Transactional
     public void handlePaymentWebhook(TossWebhookRequest request) {
-        Order order = findOrderOrThrow(Long.valueOf(request.data().orderId()));
+        Order order = findOrderOrThrow(TossPaymentClient.parseOrderId(request.data().orderId()));
 
         if (!"DONE".equals(request.data().status())) {
             return;

@@ -29,7 +29,7 @@
         const params = new URLSearchParams(window.location.search);
 
         const paymentKey = params.get('paymentKey');
-        const orderId = params.get('orderId');
+        const tossOrderId = params.get('orderId');
         const amount = params.get('amount');
         const failMessage = params.get('message');
 
@@ -38,6 +38,8 @@
             result.classList.add('error');
             return;
         }
+
+        const orderId = tossOrderId.replace('ORDER-', '');
 
         const response = await fetch(`/api/orders/${orderId}/payments/confirm`, {
             method: 'POST',

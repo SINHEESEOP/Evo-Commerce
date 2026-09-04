@@ -11,6 +11,8 @@ import java.util.Map;
 @Component
 public class TossPaymentClient {
 
+    private static final String ORDER_ID_PREFIX = "ORDER-";
+
     private final RestClient restClient;
     private final String secretKey;
 
@@ -28,10 +30,18 @@ public class TossPaymentClient {
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(Map.of(
                         "paymentKey", paymentKey,
-                        "orderId", String.valueOf(orderId),
+                        "orderId", toTossOrderId(orderId),
                         "amount", amount
                 ))
                 .retrieve()
                 .toBodilessEntity();
+    }
+
+    public static String toTossOrderId(Long orderId) {
+        return ORDER_ID_PREFIX + orderId;
+    }
+
+    public static Long parseOrderId(String tossOrderId) {
+        return Long.valueOf(tossOrderId.replaceFirst("^" + ORDER_ID_PREFIX, ""));
     }
 }

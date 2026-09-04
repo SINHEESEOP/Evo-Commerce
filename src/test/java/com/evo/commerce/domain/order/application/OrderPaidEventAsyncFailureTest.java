@@ -85,7 +85,7 @@ class OrderPaidEventAsyncFailureTest {
 
         TossWebhookRequest request = new TossWebhookRequest(
                 "PAYMENT_STATUS_CHANGED",
-                new TossWebhookRequest.Data("payment-key-1", orderId.toString(), "DONE")
+                new TossWebhookRequest.Data("payment-key-1", "ORDER-" + orderId, "DONE")
         );
 
         assertThatCode(() -> orderFacade.handlePaymentWebhook(request)).doesNotThrowAnyException();
