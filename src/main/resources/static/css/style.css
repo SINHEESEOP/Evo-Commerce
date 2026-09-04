@@ -17,6 +17,10 @@
     box-sizing: border-box;
 }
 
+[hidden] {
+    display: none !important;
+}
+
 body {
     margin: 0;
     font-family: -apple-system, "Pretendard", "Segoe UI", "Malgun Gothic", sans-serif;
@@ -163,6 +167,12 @@ button[type="submit"]:hover, .primary-button:hover {
 
 button[type="submit"]:active, .primary-button:active {
     transform: translateY(1px);
+}
+
+button[type="submit"]:disabled, .primary-button:disabled {
+    background: var(--border);
+    color: var(--text-muted);
+    cursor: not-allowed;
 }
 
 .message {

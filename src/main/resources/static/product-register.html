@@ -24,14 +24,20 @@
         <label>재고 <input type="number" id="stock" min="0" required></label>
         <button type="submit">등록하기</button>
     </form>
+    <p id="permission-notice" class="message error" hidden>MASTER 권한이 있는 계정만 상품을 등록할 수 있습니다.</p>
     <p id="result" class="message"></p>
 </main>
 
 <script src="/js/nav.js"></script>
 <script>
     const token = localStorage.getItem('accessToken');
+    const role = localStorage.getItem('role');
+
     if (!token) {
         window.location.href = '/login.html';
+    } else if (role !== 'MASTER') {
+        document.getElementById('register-form').hidden = true;
+        document.getElementById('permission-notice').hidden = false;
     }
 
     document.getElementById('register-form').addEventListener('submit', async function (event) {

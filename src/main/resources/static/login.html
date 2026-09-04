@@ -45,6 +45,7 @@
 
         if (response.ok && body.success) {
             localStorage.setItem('accessToken', body.data.token);
+            localStorage.setItem('role', body.data.user.role);
             result.textContent = `${body.data.user.name}님, 환영합니다. 상품 목록으로 이동합니다.`;
             result.classList.remove('error');
             setTimeout(function () {

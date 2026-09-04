@@ -59,7 +59,11 @@
             <dt>재고</dt><dd>${body.data.stock}개</dd>
         `;
 
-        document.getElementById('order-button').addEventListener('click', async function () {
+        const orderButton = document.getElementById('order-button');
+
+        orderButton.addEventListener('click', async function () {
+            orderButton.disabled = true;
+
             const quantity = Number(document.getElementById('quantity').value);
 
             const orderResponse = await fetch('/api/orders', {
@@ -80,6 +84,7 @@
             } else {
                 result.textContent = `주문 실패: ${orderBody.message}`;
                 result.classList.add('error');
+                orderButton.disabled = false;
             }
         });
     })();

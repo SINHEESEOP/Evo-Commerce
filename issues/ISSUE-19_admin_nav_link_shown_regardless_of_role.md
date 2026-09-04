@@ -21,10 +21,14 @@
 - 백엔드는 `@RequireRole("MASTER")`(Step 2.9)로 이미 안전하게 막고 있으므로 이건 보안 취약점은 아니다 — 그러나 권한 없는 사용자가 폼을 다 채운 뒤에야 실패를 알게 되는 건 불필요한 혼란이다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`nav.js`는 `accessToken`의 존재 여부만으로 관리자용 메뉴의 노출을 결정했다. 로그인 응답에 이미 포함돼 있던 `role` 값을 프론트엔드가 어디에도 저장하지 않고 버렸기 때문에, 로그인 여부와 권한 여부를 사실상 같은 것으로 취급하는 코드가 됐다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+`login.html`이 `body.data.user.role`을 `accessToken`과 함께 `localStorage`에 저장하도록 바꾸고, `nav.js`는 `role === 'MASTER'`일 때만 "상품 등록" 링크를 보여주도록 고쳤다(로그아웃 시 `role`도 함께 제거). 다만 이것만으로는 URL을 직접 입력해 `product-register.html`에 접근하는 경우까지 막지 못하므로, 그 페이지 자체에서도 `role`을 확인해 MASTER가 아니면 폼 대신 안내 문구만 보여주도록 했다.
+
+이 검사는 어디까지나 UX용 힌트다 — `localStorage.setItem('role', 'MASTER')`처럼 브라우저에서 직접 조작해도 실제 `POST /api/products` 요청은 서버가 JWT의 서명된 `role` 클레임으로 독립적으로 재검증하므로(Step 2.9의 `@RequireRole`) 보안에는 영향이 없다. 이 판단 근거는 `docs/bug_intents/Step_2.10_질문답변.md`에 정리했다.
+
+작업 중 `form { display: flex }` 규칙이 `hidden` 속성의 기본 동작(`display: none`)을 덮어써 폼이 실제로는 숨겨지지 않는 CSS 버그를 함께 발견해 `[hidden] { display: none !important; }`를 전역으로 추가해 고쳤다.
