@@ -40,9 +40,20 @@
 
         if (response.ok && body.success) {
             const list = document.getElementById('product-list');
+
+            if (body.data.length === 0) {
+                result.textContent = '등록된 상품이 없습니다.';
+            }
+
             body.data.forEach(function (product) {
                 const item = document.createElement('li');
-                item.innerHTML = `<a href="/product-detail.html?id=${product.id}">${product.name}</a> - ${product.price}원 (재고 ${product.stock}개)`;
+                item.innerHTML = `
+                    <a href="/product-detail.html?id=${product.id}">
+                        ${product.name}
+                        <span class="price">${product.price.toLocaleString()}원</span>
+                        <span class="stock">재고 ${product.stock}개</span>
+                    </a>
+                `;
                 list.appendChild(item);
             });
         } else {
