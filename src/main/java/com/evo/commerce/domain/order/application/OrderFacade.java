@@ -101,6 +101,10 @@ public class OrderFacade {
         markOrderAsPaid(order, data.paymentKey(), data.method(), data.totalAmount(), data.approvedAt());
     }
 
+
+    // -------------------------------------- 재사용 유틸 함수 ----------------------------------------
+
+
     private void markOrderAsPaid(Order order, String paymentKey, String method, int amount, OffsetDateTime approvedAt) {
         decreaseStockForItems(order);
         order.pay();
