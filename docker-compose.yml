@@ -53,6 +53,7 @@ services:
       DB_USERNAME: root
       DB_PASSWORD: root1234
       JWT_SECRET: ${JWT_SECRET}
+      TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
     depends_on:
       mysql-master:
         condition: service_healthy
