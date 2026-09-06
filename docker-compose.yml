@@ -1,21 +1,44 @@
 version: '3.8'
 
 services:
-  mysql:
+  mysql-master:
     image: mysql:8.0
-    container_name: evo-mysql
+    container_name: evo-mysql-master
+    command: --server-id=1 --log-bin=mysql-bin --gtid-mode=ON --enforce-gtid-consistency=ON --binlog-format=ROW
     environment:
       MYSQL_ROOT_PASSWORD: root1234
       MYSQL_DATABASE: evo_commerce
     ports:
       - "3306:3306"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - mysql-master-data:/var/lib/mysql
+      - ./docker/mysql-master-init:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot1234"]
       interval: 5s
       timeout: 5s
       retries: 10
+
+  mysql-slave:
+    image: mysql:8.0
+    container_name: evo-mysql-slave
+    command: --server-id=2 --gtid-mode=ON --enforce-gtid-consistency=ON --read-only=ON --relay-log=relay-bin
+    environment:
+      MYSQL_ROOT_PASSWORD: root1234
+      MYSQL_DATABASE: evo_commerce
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql-slave-data:/var/lib/mysql
+      - ./docker/mysql-slave-init:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot1234"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    depends_on:
+      mysql-master:
+        condition: service_healthy
 
   app:
     build: .
@@ -25,13 +48,17 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/evo_commerce
-      SPRING_DATASOURCE_USERNAME: root
-      SPRING_DATASOURCE_PASSWORD: root1234
+      DB_MASTER_URL: jdbc:mysql://mysql-master:3306/evo_commerce
+      DB_SLAVE_URL: jdbc:mysql://mysql-slave:3306/evo_commerce
+      DB_USERNAME: root
+      DB_PASSWORD: root1234
       JWT_SECRET: ${JWT_SECRET}
     depends_on:
-      mysql:
+      mysql-master:
+        condition: service_healthy
+      mysql-slave:
         condition: service_healthy
 
 volumes:
-  mysql-data:
+  mysql-master-data:
+  mysql-slave-data:

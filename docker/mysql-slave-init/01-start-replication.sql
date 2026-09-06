@@ -1,0 +1,8 @@
+CHANGE MASTER TO
+    MASTER_HOST = 'mysql-master',
+    MASTER_PORT = 3306,
+    MASTER_USER = 'repl',
+    MASTER_PASSWORD = 'repl1234',
+    MASTER_AUTO_POSITION = 1;
+
+START SLAVE;
