@@ -5,7 +5,7 @@
     <title>로그인 - Evo-Commerce</title>
     <script>
         if (localStorage.getItem('accessToken')) {
-            window.location.replace('/products.html');
+            window.location.replace('/index.html');
         }
     </script>
     <link rel="stylesheet" href="/css/style.css">
@@ -51,10 +51,10 @@
         if (response.ok && body.success) {
             localStorage.setItem('accessToken', body.data.token);
             localStorage.setItem('role', body.data.user.role);
-            result.textContent = `${body.data.user.name}님, 환영합니다. 상품 목록으로 이동합니다.`;
+            result.textContent = `${body.data.user.name}님, 환영합니다.`;
             result.classList.remove('error');
             setTimeout(function () {
-                window.location.href = '/products.html';
+                window.location.href = '/index.html';
             }, 600);
         } else {
             result.textContent = `로그인 실패: ${body.message}`;

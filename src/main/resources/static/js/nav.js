@@ -4,7 +4,7 @@
     const loggedIn = !!token;
     const isMaster = role === 'MASTER';
 
-    document.querySelectorAll('#nav-login, #nav-signup').forEach(function (el) {
+    document.querySelectorAll('#nav-login, #nav-signup, #hero-login, #hero-signup').forEach(function (el) {
         el.hidden = loggedIn;
     });
     document.querySelectorAll('#nav-logout').forEach(function (el) {
