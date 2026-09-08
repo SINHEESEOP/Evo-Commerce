@@ -42,6 +42,10 @@ dependencies {
     // 로컬 개발 시 .env 파일을 자동으로 읽어 Environment에 반영
     implementation 'me.paulschwarz:spring-dotenv:4.0.0'
 
+    // 낙관적 락 충돌 시 재시도를 위한 Spring Retry (AOP 기반이므로 starter-aop 필요)
+    implementation 'org.springframework.retry:spring-retry'
+    implementation 'org.springframework.boot:spring-boot-starter-aop'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'

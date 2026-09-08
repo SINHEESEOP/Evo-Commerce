@@ -38,10 +38,33 @@
 - 결과적으로 "선착순 인원을 초과하지 않는다"는 요구사항은 만족하지만, "정원 안에서는 최대한 많은 사용자가 성공해야 한다"는 요구사항은 만족하지 못한다 — 사실상 첫 번째로 락을 획득한 1명만 성공하고, 아직 정원이 남아있었을 나머지 2자리는 채워지지 않은 채 요청 자체가 실패로 끝난다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`TimeSaleEvent.increaseParticipant()`와 `@Version`은 "참여 인원이 `participantLimit`을 초과해서 저장되는 것"만 막을 뿐, 그 과정에서 발생하는 DB 잠금 경합이나 데드락을 처리하는 것과는 무관하다. `TimeSaleFacade.participate()`가 `event.increaseParticipant()`를 호출하고 트랜잭션을 커밋하는 흐름에서, 여러 스레드가 같은 `TimeSaleEvent` 로우를 동시에 `UPDATE`하려 하면 InnoDB의 실제 로우 잠금 경합이 일어나고, 이 경합이 데드락으로 이어지면 일부 트랜잭션이 강제로 롤백된다. `participate()`에는 이 실패를 잡아 재시도하는 로직이 전혀 없었기 때문에, 잠금 경합에서 밀린 요청은 아직 정원이 남아있었더라도 그대로 실패로 끝나고, `GlobalExceptionHandler`의 catch-all이 이를 500으로 응답했다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+`TimeSaleFacade.participate()`에 Spring Retry의 `@Retryable`을 적용해, `ObjectOptimisticLockingFailureException`과 `CannotAcquireLockException`의 공통 상위 타입인 `org.springframework.dao.ConcurrencyFailureException`을 대상으로 최대 5회, 50ms부터 시작해 두 배씩 늘어나는(최대 500ms) 백오프로 재시도하도록 했다. 재시도를 모두 소진하면 `@Recover` 메서드가 `TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE`(503)이라는, "정원이 다 찼다"(409, `PARTICIPANT_LIMIT_EXCEEDED`)와는 명확히 구분되는 예외로 변환한다.
+
+`@Retryable`과 `@Transactional`을 같은 메서드에 함께 걸면 재시도가 실패가 확정된 영속성 컨텍스트를 그대로 재사용해 무의미해지는 문제가 있어, `participate()`는 `@Transactional`을 직접 갖지 않고 매 재시도마다 `TransactionTemplate.execute(...)`로 새 트랜잭션을 여는 방식을 택했다.
+
+```java
+@Retryable(
+        retryFor = ConcurrencyFailureException.class,
+        maxAttempts = 5,
+        backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500)
+)
+public TimeSaleParticipationResponse participate(Long userId, Long eventId) {
+    return transactionTemplate.execute(status -> participateInNewTransaction(userId, eventId));
+}
+
+@Recover
+public TimeSaleParticipationResponse recoverFromConcurrencyFailure(
+        ConcurrencyFailureException e, Long userId, Long eventId) {
+    throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+}
+```
+
+추가로, `participate()`는 `event.currentParticipants`를 신뢰 소스로 쓰는 반면 `getEvents()`/`getEvent()`는 별도의 `COUNT(*)` 쿼리로 인원을 세고 있어 참여 인원의 출처가 두 곳으로 갈라져 있던 문제도 함께 정리했다. `TimeSaleMapper.toResponse()`가 `event.getCurrentParticipants()`를 직접 읽도록 통일해, 이제 참여 인원 조회 경로가 모두 같은 값을 참조한다.
+
+같은 시나리오(정원 3명, 동시 요청 10건)로 `TimeSaleParticipationConcurrencyTest`를 반복 실행한 결과, 매번 정확히 3건이 성공하고(약 590~605ms 소요) 나머지 7건은 `PARTICIPANT_LIMIT_EXCEEDED`로 정상 종료된다 — 더 이상 500이나 데드락으로 인한 손실 없이 정원 안에서 최대한 성공시킨다.

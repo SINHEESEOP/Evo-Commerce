@@ -16,6 +16,7 @@ import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.TimeSaleErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -23,6 +24,8 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.transaction.support.TransactionCallback;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -34,6 +37,7 @@ import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newPr
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -54,8 +58,19 @@ class TimeSaleFacadeTest {
     @Mock
     OrderRepository orderRepository;
 
+    @Mock
+    TransactionTemplate transactionTemplate;
+
     @InjectMocks
     TimeSaleFacade timeSaleFacade;
+
+    @BeforeEach
+    void setUpTransactionTemplate() {
+        lenient().when(transactionTemplate.execute(ArgumentMatchers.any())).thenAnswer(invocation -> {
+            TransactionCallback<?> callback = invocation.getArgument(0);
+            return callback.doInTransaction(null);
+        });
+    }
 
     @Test
     void 진행_중인_이벤트에_참여하면_할인가로_주문이_생성되고_참여_기록이_저장된다() {
@@ -182,9 +197,11 @@ class TimeSaleFacadeTest {
     void 이벤트_목록을_조회하면_참여_인원수와_함께_반환된다() {
         LocalDateTime now = LocalDateTime.now();
         TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
+        for (int i = 0; i < 7; i++) {
+            event.increaseParticipant();
+        }
 
         given(timeSaleEventRepository.findAll()).willReturn(List.of(event));
-        given(timeSaleParticipationRepository.countByTimeSaleEvent(event)).willReturn(7L);
 
         List<TimeSaleEventResponse> responses = timeSaleFacade.getEvents();
 

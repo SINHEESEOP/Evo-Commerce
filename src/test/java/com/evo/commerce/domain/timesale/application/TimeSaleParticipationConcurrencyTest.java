@@ -12,7 +12,6 @@ import com.evo.commerce.domain.user.domain.User;
 import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.domain.user.domain.UserRole;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -74,7 +73,6 @@ class TimeSaleParticipationConcurrencyTest {
         }
     }
 
-    @Disabled("ISSUE-28: 낙관적 락 적용 후 재시도 로직 부재로 동시 요청 대부분이 락 획득 실패로 종료됨 - 재시도 적용 후 재활성화 예정")
     @Test
     void 동시에_여러_명이_참여해도_선착순_인원_제한을_초과하지_않는다() throws InterruptedException {
         LocalDateTime now = LocalDateTime.now();
