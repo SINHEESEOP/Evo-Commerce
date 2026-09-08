@@ -80,10 +80,7 @@ public class TimeSaleFacade {
             throw new BusinessException(TimeSaleErrorCode.ALREADY_PARTICIPATED);
         }
 
-        long currentParticipants = timeSaleParticipationRepository.countByTimeSaleEvent(event);
-        if (currentParticipants >= event.getParticipantLimit()) {
-            throw new BusinessException(TimeSaleErrorCode.PARTICIPANT_LIMIT_EXCEEDED);
-        }
+        event.increaseParticipant();
 
         Order order = Order.builder().user(user).build();
         order.addItem(OrderItem.builder()

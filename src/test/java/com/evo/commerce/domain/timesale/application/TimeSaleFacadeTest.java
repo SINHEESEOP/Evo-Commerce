@@ -67,7 +67,6 @@ class TimeSaleFacadeTest {
         given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(timeSaleParticipationRepository.existsByTimeSaleEventAndUser(event, user)).willReturn(false);
-        given(timeSaleParticipationRepository.countByTimeSaleEvent(event)).willReturn(3L);
         given(orderRepository.save(ArgumentMatchers.any())).willAnswer(invocation -> invocation.getArgument(0));
         given(timeSaleParticipationRepository.save(ArgumentMatchers.any())).willAnswer(invocation -> invocation.getArgument(0));
 
@@ -136,11 +135,13 @@ class TimeSaleFacadeTest {
         LocalDateTime now = LocalDateTime.now();
         TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
         User user = newUser();
+        for (int i = 0; i < event.getParticipantLimit(); i++) {
+            event.increaseParticipant();
+        }
 
         given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(timeSaleParticipationRepository.existsByTimeSaleEventAndUser(event, user)).willReturn(false);
-        given(timeSaleParticipationRepository.countByTimeSaleEvent(event)).willReturn(100L);
 
         assertThatThrownBy(() -> timeSaleFacade.participate(1L, 1L))
                 .isInstanceOf(BusinessException.class)

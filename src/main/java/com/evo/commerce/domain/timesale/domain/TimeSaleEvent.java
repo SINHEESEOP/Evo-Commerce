@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.Version;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -40,12 +41,17 @@ public class TimeSaleEvent {
 
     private int participantLimit;
 
+    private int currentParticipants;
+
     private LocalDateTime startAt;
 
     private LocalDateTime endAt;
 
     @CreatedDate
     private LocalDateTime createdAt;
+
+    @Version
+    private Long version;
 
     @Builder
     public TimeSaleEvent(Product product, int discountPrice, int participantLimit, LocalDateTime startAt, LocalDateTime endAt) {
@@ -60,6 +66,13 @@ public class TimeSaleEvent {
         if (now.isBefore(startAt) || now.isAfter(endAt)) {
             throw new BusinessException(TimeSaleErrorCode.TIME_SALE_NOT_IN_PROGRESS);
         }
+    }
+
+    public void increaseParticipant() {
+        if (currentParticipants >= participantLimit) {
+            throw new BusinessException(TimeSaleErrorCode.PARTICIPANT_LIMIT_EXCEEDED);
+        }
+        currentParticipants++;
     }
 
     @Override
