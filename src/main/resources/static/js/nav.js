@@ -10,7 +10,7 @@
     document.querySelectorAll('#nav-logout').forEach(function (el) {
         el.hidden = !loggedIn;
     });
-    document.querySelectorAll('#nav-register').forEach(function (el) {
+    document.querySelectorAll('#nav-register, #nav-timesale-register').forEach(function (el) {
         el.hidden = !isMaster;
     });
 
