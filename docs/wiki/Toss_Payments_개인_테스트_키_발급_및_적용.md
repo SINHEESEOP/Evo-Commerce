@@ -25,14 +25,14 @@ Toss Payments 공식 문서에는 별도 가입 없이 누구나 쓸 수 있는 
 | 파일 | 바꿀 값 | 비고 |
 |---|---|---|
 | `.env` | `TOSS_SECRET_KEY` | 로컬 전용 파일, `.gitignore`에 등록돼 있어 git에 올라가지 않는다 |
-| `src/main/resources/static/checkout.html` | `clientKey` 변수 값 | 클라이언트 키는 브라우저에 그대로 노출되는 공개 값이라 소스에 직접 넣어도 안전하다 |
+| `src/main/resources/static/js/payment/checkout.js` | `clientKey` 변수 값 | 클라이언트 키는 브라우저에 그대로 노출되는 공개 값이라 소스에 직접 넣어도 안전하다 |
 
 > [!CAUTION]
 > `.env.example`은 git에 커밋되는 템플릿 파일이다. 여기에는 개인 시크릿 키를 넣지 말고, 지금 들어있는 Toss 공식 문서의 공용 테스트 키를 그대로 둔다. 개인 키는 오직 `.env`에만 넣는다.
 
 ## 4. 적용 확인
 1. 애플리케이션을 재시작한다. `.env` 값은 부팅 시점에 한 번 읽힌다.
-2. `/checkout.html?orderId={주문ID}`에서 결제를 진행한다.
+2. `/templates/payment/checkout.html?orderId={주문ID}`에서 결제를 진행한다.
 3. 개발자센터 대시보드의 결제 내역에서 방금 진행한 결제 건이 조회되면 개인 키로 정상 전환된 것이다. (공용 키로 결제했을 때는 본인 계정 대시보드에 아무 내역도 남지 않는다.)
 
 ## 참고

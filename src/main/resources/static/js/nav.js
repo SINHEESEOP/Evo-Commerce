@@ -19,7 +19,7 @@
         logoutButton.addEventListener('click', function () {
             localStorage.removeItem('accessToken');
             localStorage.removeItem('role');
-            window.location.href = '/login.html';
+            window.location.href = '/templates/user/login.html';
         });
     }
 
@@ -29,7 +29,7 @@
         }
         localStorage.removeItem('accessToken');
         localStorage.removeItem('role');
-        window.location.href = '/login.html';
+        window.location.href = '/templates/user/login.html';
         return true;
     };
 })();

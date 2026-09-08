@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <title>상품 등록 - Evo-Commerce</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+<nav>
+    <a class="brand" href="/index.html">Evo-Commerce</a>
+    <a href="/templates/product/products.html">상품 목록</a>
+    <a href="/templates/timesale/timesales.html">타임세일</a>
+    <span class="spacer"></span>
+    <a href="/templates/user/login.html" id="nav-login">로그인</a>
+    <a href="/templates/user/signup.html" id="nav-signup">회원가입</a>
+    <a href="/templates/product/product-register.html" id="nav-register" hidden>상품 등록</a>
+    <a href="/templates/timesale/timesale-register.html" id="nav-timesale-register" hidden>타임세일 등록</a>
+    <button id="nav-logout" hidden>로그아웃</button>
+</nav>
+<main>
+    <a class="back-link" href="/templates/product/products.html">← 상품 목록으로</a>
+    <h1>상품 등록</h1>
+    <form id="register-form" class="card">
+        <label>상품명 <input type="text" id="name" required></label>
+        <label>가격 <input type="number" id="price" min="0" required></label>
+        <label>재고 <input type="number" id="stock" min="0" required></label>
+        <button type="submit">등록하기</button>
+    </form>
+    <p id="permission-notice" class="message error" hidden>MASTER 권한이 있는 계정만 상품을 등록할 수 있습니다.</p>
+    <p id="result" class="message"></p>
+</main>
+
+<script src="/js/nav.js"></script>
+<script src="/js/product/product-register.js"></script>
+</body>
+</html>

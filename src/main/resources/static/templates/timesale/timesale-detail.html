@@ -2,12 +2,12 @@
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <title>Evo-Commerce</title>
+    <title>타임세일 상세 - Evo-Commerce</title>
     <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
 <nav>
-    <span class="brand">Evo-Commerce</span>
+    <a class="brand" href="/index.html">Evo-Commerce</a>
     <a href="/templates/product/products.html">상품 목록</a>
     <a href="/templates/timesale/timesales.html">타임세일</a>
     <span class="spacer"></span>
@@ -18,17 +18,17 @@
     <button id="nav-logout" hidden>로그아웃</button>
 </nav>
 <main>
-    <div class="hero">
-        <h1>Evo-Commerce</h1>
-        <p>회원가입하고 상품을 둘러본 뒤 바로 주문·결제까지 진행해보세요.</p>
-        <div class="hero-actions">
-            <a class="primary" href="/templates/user/signup.html" id="hero-signup">회원가입</a>
-            <a class="secondary" href="/templates/user/login.html" id="hero-login">로그인</a>
-            <a class="secondary" href="/templates/product/products.html">상품 목록 보기</a>
-        </div>
-    </div>
+    <a class="back-link" href="/templates/timesale/timesales.html">← 타임세일 목록으로</a>
+    <h1>타임세일 상세</h1>
+    <dl id="time-sale-detail"></dl>
+
+    <p class="countdown" id="countdown"></p>
+    <button type="button" class="primary-button" id="participate-button" disabled>참여하기</button>
+
+    <p id="result" class="message"></p>
 </main>
 
 <script src="/js/nav.js"></script>
+<script src="/js/timesale/timesale-detail.js"></script>
 </body>
 </html>
