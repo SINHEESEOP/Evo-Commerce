@@ -1,6 +1,8 @@
 package com.evo.commerce.domain.timesale.domain;
 
 import com.evo.commerce.domain.product.domain.Product;
+import com.evo.commerce.global.exception.BusinessException;
+import com.evo.commerce.global.exception.TimeSaleErrorCode;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EntityListeners;
 import jakarta.persistence.FetchType;
@@ -52,6 +54,12 @@ public class TimeSaleEvent {
         this.participantLimit = participantLimit;
         this.startAt = startAt;
         this.endAt = endAt;
+    }
+
+    public void validateInProgress(LocalDateTime now) {
+        if (now.isBefore(startAt) || now.isAfter(endAt)) {
+            throw new BusinessException(TimeSaleErrorCode.TIME_SALE_NOT_IN_PROGRESS);
+        }
     }
 
     @Override

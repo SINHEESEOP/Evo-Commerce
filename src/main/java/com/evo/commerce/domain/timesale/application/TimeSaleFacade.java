@@ -23,6 +23,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -55,7 +56,9 @@ public class TimeSaleFacade {
     @Transactional(readOnly = true)
     public List<TimeSaleEventResponse> getEvents() {
         return timeSaleEventRepository.findAll().stream()
-                .map(event -> TimeSaleMapper.toResponse(event, timeSaleParticipationRepository.countByTimeSaleEvent(event)))
+                .map(event ->
+                        TimeSaleMapper.toResponse
+                                (event, timeSaleParticipationRepository.countByTimeSaleEvent(event)))
                 .toList();
     }
 
@@ -68,6 +71,7 @@ public class TimeSaleFacade {
     @Transactional
     public TimeSaleParticipationResponse participate(Long userId, Long eventId) {
         TimeSaleEvent event = findEventOrThrow(eventId);
+        event.validateInProgress(LocalDateTime.now());
 
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
