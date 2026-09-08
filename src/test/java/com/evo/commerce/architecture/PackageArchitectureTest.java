@@ -22,7 +22,6 @@ class PackageArchitectureTest {
 
     @Test
     void 표현_계층은_도메인_계층을_직접_참조할_수_없고_응용_계층을_거쳐야_한다() {
-        System.out.println('Q');
         noClasses().that().resideInAPackage("..presentation")
                 .should().dependOnClassesThat().resideInAPackage("..domain")
                 .check(classes);
