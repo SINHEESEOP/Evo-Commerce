@@ -361,3 +361,10 @@ ul.link-list {
     font-size: 16px;
     margin-top: 8px;
 }
+
+.countdown {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--primary);
+    margin: 0 0 16px;
+}

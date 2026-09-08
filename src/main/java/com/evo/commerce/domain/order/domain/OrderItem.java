@@ -39,10 +39,11 @@ public class OrderItem {
     private int quantity;
 
     @Builder
-    public OrderItem(Product product, int quantity) {
+    public OrderItem(Product product, int quantity, Integer unitPrice) {
         this.product = product;
         this.quantity = quantity;
-        this.productSnapshot = new ProductSnapshot(product.getName(), product.getPrice());
+        int price = unitPrice != null ? unitPrice : product.getPrice();
+        this.productSnapshot = new ProductSnapshot(product.getName(), price);
     }
 
     void assignOrder(Order order) {
