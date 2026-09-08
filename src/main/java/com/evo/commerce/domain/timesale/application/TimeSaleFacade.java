@@ -20,20 +20,23 @@ import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.TimeSaleErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.dao.ConcurrencyFailureException;
-import org.springframework.retry.annotation.Backoff;
-import org.springframework.retry.annotation.Recover;
-import org.springframework.retry.annotation.Retryable;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class TimeSaleFacade {
+
+    private static final String PARTICIPATION_LOCK_KEY_PREFIX = "time-sale:participation-lock:";
+    private static final long LOCK_WAIT_MILLIS = 200;
+    private static final long LOCK_LEASE_MILLIS = 3_000;
 
     private final TimeSaleEventRepository timeSaleEventRepository;
     private final TimeSaleParticipationRepository timeSaleParticipationRepository;
@@ -41,6 +44,7 @@ public class TimeSaleFacade {
     private final UserRepository userRepository;
     private final OrderRepository orderRepository;
     private final TransactionTemplate transactionTemplate;
+    private final RedissonClient redissonClient;
 
     @Transactional
     public TimeSaleEventResponse createEvent(TimeSaleEventCreateRequest request) {
@@ -72,23 +76,30 @@ public class TimeSaleFacade {
     }
 
     /**
-     * {@code @Retryable}과 {@code @Transactional}을 같은 메서드에 함께 걸면, 두 번째 시도부터도
-     * 첫 시도 때 이미 실패한(플러시 시점에 버전 충돌이 확정된) 영속성 컨텍스트를 그대로 재사용하게 되어
-     * 재시도가 무의미해진다. {@link TransactionTemplate}으로 매 시도마다 새 트랜잭션을 여는 이유다.
+     * 락 해제는 반드시 트랜잭션 커밋 이후여야 한다 — {@code @Transactional}을 이 메서드에 직접 걸면
+     * 프록시가 메서드 반환 후에야 커밋하므로, {@code finally}의 {@code unlock()}이 커밋보다 먼저
+     * 실행되어 다음 스레드가 아직 반영되지 않은(커밋 전) 값을 읽어버린다. {@link TransactionTemplate}으로
+     * 트랜잭션을 명시적으로 열고 그 실행이 끝난(=커밋된) 뒤에 락을 반납하는 이유다.
      */
-    @Retryable(
-            retryFor = ConcurrencyFailureException.class,
-            maxAttempts = 5,
-            backoff = @Backoff(delay = 50, multiplier = 2, maxDelay = 500)
-    )
     public TimeSaleParticipationResponse participate(Long userId, Long eventId) {
-        return transactionTemplate.execute(status -> participateInNewTransaction(userId, eventId));
-    }
+        RLock lock = redissonClient.getLock(PARTICIPATION_LOCK_KEY_PREFIX + eventId);
 
-    @Recover
-    public TimeSaleParticipationResponse recoverFromConcurrencyFailure(
-            ConcurrencyFailureException e, Long userId, Long eventId) {
-        throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+        boolean acquired;
+        try {
+            acquired = lock.tryLock(LOCK_WAIT_MILLIS, LOCK_LEASE_MILLIS, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+        }
+        if (!acquired) {
+            throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+        }
+
+        try {
+            return transactionTemplate.execute(status -> participateInNewTransaction(userId, eventId));
+        } finally {
+            lock.unlock();
+        }
     }
 
     private TimeSaleParticipationResponse participateInNewTransaction(Long userId, Long eventId) {

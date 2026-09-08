@@ -24,12 +24,15 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.TimeUnit;
 
 import static com.evo.commerce.domain.order.domain.OrderTestFixtures.newUser;
 import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newEvent;
@@ -61,15 +64,24 @@ class TimeSaleFacadeTest {
     @Mock
     TransactionTemplate transactionTemplate;
 
+    @Mock
+    RedissonClient redissonClient;
+
+    @Mock
+    RLock lock;
+
     @InjectMocks
     TimeSaleFacade timeSaleFacade;
 
     @BeforeEach
-    void setUpTransactionTemplate() {
+    void setUpTransactionTemplate() throws InterruptedException {
         lenient().when(transactionTemplate.execute(ArgumentMatchers.any())).thenAnswer(invocation -> {
             TransactionCallback<?> callback = invocation.getArgument(0);
             return callback.doInTransaction(null);
         });
+        lenient().when(redissonClient.getLock(ArgumentMatchers.anyString())).thenReturn(lock);
+        lenient().when(lock.tryLock(ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), ArgumentMatchers.any(TimeUnit.class)))
+                .thenReturn(true);
     }
 
     @Test

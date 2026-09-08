@@ -40,6 +40,17 @@ services:
       mysql-master:
         condition: service_healthy
 
+  redis:
+    image: redis:7.4-alpine
+    container_name: evo-redis
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
   app:
     build: .
     container_name: evo-app
@@ -52,12 +63,16 @@ services:
       DB_SLAVE_URL: jdbc:mysql://mysql-slave:3306/evo_commerce
       DB_USERNAME: root
       DB_PASSWORD: root1234
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
       JWT_SECRET: ${JWT_SECRET}
       TOSS_SECRET_KEY: ${TOSS_SECRET_KEY}
     depends_on:
       mysql-master:
         condition: service_healthy
       mysql-slave:
+        condition: service_healthy
+      redis:
         condition: service_healthy
 
 volumes:
