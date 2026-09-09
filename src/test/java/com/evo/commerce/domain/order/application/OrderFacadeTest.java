@@ -2,9 +2,11 @@ package com.evo.commerce.domain.order.application;
 
 import com.evo.commerce.domain.order.domain.Order;
 import com.evo.commerce.domain.order.domain.OrderItem;
-import com.evo.commerce.domain.order.domain.OrderPaidEvent;
 import com.evo.commerce.domain.order.domain.OrderRepository;
 import com.evo.commerce.domain.order.domain.OrderStatus;
+import com.evo.commerce.domain.order.domain.OutboxEvent;
+import com.evo.commerce.domain.order.domain.OutboxEventRepository;
+import com.evo.commerce.domain.order.domain.OutboxEventStatus;
 import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
@@ -22,14 +24,15 @@ import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.OrderErrorCode;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.InjectMocks;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.ApplicationEventPublisher;
 
 import java.time.OffsetDateTime;
 import java.util.List;
@@ -37,7 +40,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -63,7 +65,10 @@ class OrderFacadeTest {
     TossPaymentClient tossPaymentClient;
 
     @Mock
-    ApplicationEventPublisher eventPublisher;
+    OutboxEventRepository outboxEventRepository;
+
+    @Spy
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     OrderFacade orderFacade;
@@ -141,7 +146,12 @@ class OrderFacadeTest {
 
         assertThat(response.status()).isEqualTo(OrderStatus.PAID);
         assertThat(product.getStock()).isEqualTo(8);
-        verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
+
+        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        OutboxEvent savedOutboxEvent = outboxCaptor.getValue();
+        assertThat(savedOutboxEvent.getEventType()).isEqualTo("ORDER_PAID");
+        assertThat(savedOutboxEvent.getStatus()).isEqualTo(OutboxEventStatus.PENDING);
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
@@ -169,7 +179,7 @@ class OrderFacadeTest {
                 .hasFieldOrPropertyWithValue("errorCode", ProductErrorCode.INSUFFICIENT_STOCK);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.CREATED);
-        verifyNoInteractions(eventPublisher);
+        verifyNoInteractions(outboxEventRepository);
     }
 
     @Test
@@ -216,7 +226,12 @@ class OrderFacadeTest {
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
         assertThat(product.getStock()).isEqualTo(8);
-        verify(eventPublisher).publishEvent(any(OrderPaidEvent.class));
+
+        ArgumentCaptor<OutboxEvent> outboxCaptor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(outboxCaptor.capture());
+        OutboxEvent savedOutboxEvent = outboxCaptor.getValue();
+        assertThat(savedOutboxEvent.getEventType()).isEqualTo("ORDER_PAID");
+        assertThat(savedOutboxEvent.getStatus()).isEqualTo(OutboxEventStatus.PENDING);
 
         ArgumentCaptor<Payment> paymentCaptor = ArgumentCaptor.forClass(Payment.class);
         verify(paymentRepository).save(paymentCaptor.capture());
@@ -242,7 +257,7 @@ class OrderFacadeTest {
         orderFacade.handlePaymentWebhook(request);
 
         assertThat(order.getStatus()).isEqualTo(OrderStatus.PAID);
-        verifyNoInteractions(eventPublisher);
+        verifyNoInteractions(outboxEventRepository);
         verifyNoInteractions(paymentRepository);
     }
 }

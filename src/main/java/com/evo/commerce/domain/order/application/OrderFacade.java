@@ -6,6 +6,9 @@ import com.evo.commerce.domain.order.domain.OrderMapper;
 import com.evo.commerce.domain.order.domain.OrderPaidEvent;
 import com.evo.commerce.domain.order.domain.OrderRepository;
 import com.evo.commerce.domain.order.domain.OrderStatus;
+import com.evo.commerce.domain.order.domain.OutboxEvent;
+import com.evo.commerce.domain.order.domain.OutboxEventRepository;
+import com.evo.commerce.domain.order.domain.OutboxEventStatus;
 import com.evo.commerce.domain.order.dto.OrderCreateRequest;
 import com.evo.commerce.domain.order.dto.OrderItemRequest;
 import com.evo.commerce.domain.order.dto.OrderResponse;
@@ -23,8 +26,9 @@ import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.OrderErrorCode;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.UserErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,7 +43,8 @@ public class OrderFacade {
     private final UserRepository userRepository;
     private final PaymentRepository paymentRepository;
     private final TossPaymentClient tossPaymentClient;
-    private final ApplicationEventPublisher eventPublisher;
+    private final OutboxEventRepository outboxEventRepository;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public OrderResponse placeOrder(Long userId, OrderCreateRequest request) {
@@ -117,7 +122,20 @@ public class OrderFacade {
                 .approvedAt(approvedAt.toLocalDateTime())
                 .build());
 
-        eventPublisher.publishEvent(new OrderPaidEvent(order.getId(), order.getUser().getId()));
+        OrderPaidEvent event = new OrderPaidEvent(order.getId(), order.getUser().getId());
+        outboxEventRepository.save(OutboxEvent.builder()
+                .eventType("ORDER_PAID")
+                .payload(toPayload(event))
+                .status(OutboxEventStatus.PENDING)
+                .build());
+    }
+
+    private String toPayload(Object event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("이벤트 직렬화에 실패했습니다.", e);
+        }
     }
 
     private void decreaseStockForItems(Order order) {

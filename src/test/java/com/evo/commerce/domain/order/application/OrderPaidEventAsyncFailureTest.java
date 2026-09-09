@@ -6,6 +6,7 @@ import com.evo.commerce.domain.order.domain.OrderItem;
 import com.evo.commerce.domain.order.domain.OrderRepository;
 import com.evo.commerce.domain.order.domain.OrderStatus;
 import com.evo.commerce.domain.order.dto.TossWebhookRequest;
+import com.evo.commerce.domain.order.infrastructure.OutboxEventPublisher;
 import com.evo.commerce.domain.payment.domain.PaymentRepository;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductRepository;
@@ -44,6 +45,9 @@ class OrderPaidEventAsyncFailureTest {
 
     @Autowired
     PaymentRepository paymentRepository;
+
+    @Autowired
+    OutboxEventPublisher outboxEventPublisher;
 
     @MockitoBean
     NotificationRepository notificationRepository;
@@ -99,6 +103,8 @@ class OrderPaidEventAsyncFailureTest {
 
         Order reloaded = orderRepository.findById(orderId).orElseThrow();
         assertThat(reloaded.getStatus()).isEqualTo(OrderStatus.PAID);
+
+        outboxEventPublisher.publishPendingEvents();
 
         verify(notificationRepository, timeout(2000)).save(any());
     }
