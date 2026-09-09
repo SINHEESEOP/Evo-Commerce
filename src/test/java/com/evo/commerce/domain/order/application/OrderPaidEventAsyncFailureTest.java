@@ -5,6 +5,8 @@ import com.evo.commerce.domain.order.domain.Order;
 import com.evo.commerce.domain.order.domain.OrderItem;
 import com.evo.commerce.domain.order.domain.OrderRepository;
 import com.evo.commerce.domain.order.domain.OrderStatus;
+import com.evo.commerce.domain.order.domain.OutboxEventRepository;
+import com.evo.commerce.domain.order.domain.OutboxEventStatus;
 import com.evo.commerce.domain.order.dto.TossWebhookRequest;
 import com.evo.commerce.domain.order.infrastructure.OutboxEventPublisher;
 import com.evo.commerce.domain.payment.domain.PaymentRepository;
@@ -18,6 +20,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.OffsetDateTime;
 
@@ -25,7 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
-import static org.mockito.Mockito.timeout;
 import static org.mockito.Mockito.verify;
 
 @SpringBootTest
@@ -49,6 +51,12 @@ class OrderPaidEventAsyncFailureTest {
     @Autowired
     OutboxEventPublisher outboxEventPublisher;
 
+    @Autowired
+    OutboxEventRepository outboxEventRepository;
+
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     @MockitoBean
     NotificationRepository notificationRepository;
 
@@ -59,6 +67,9 @@ class OrderPaidEventAsyncFailureTest {
     @AfterEach
     void cleanUp() {
         if (orderId != null) {
+            outboxEventRepository.findAll().stream()
+                    .filter(event -> event.getPayload().contains("\"orderId\":" + orderId))
+                    .forEach(event -> outboxEventRepository.deleteById(event.getId()));
             paymentRepository.deleteByOrder_Id(orderId);
             orderRepository.deleteById(orderId);
         }
@@ -101,11 +112,20 @@ class OrderPaidEventAsyncFailureTest {
 
         assertThatCode(() -> orderFacade.handlePaymentWebhook(request)).doesNotThrowAnyException();
 
-        Order reloaded = orderRepository.findById(orderId).orElseThrow();
-        assertThat(reloaded.getStatus()).isEqualTo(OrderStatus.PAID);
+        OrderStatus reloadedStatus = transactionTemplate.execute(status ->
+                orderRepository.findById(orderId).orElseThrow().getStatus());
+        assertThat(reloadedStatus).isEqualTo(OrderStatus.PAID);
 
         outboxEventPublisher.publishPendingEvents();
 
-        verify(notificationRepository, timeout(2000)).save(any());
+        verify(notificationRepository).save(any());
+
+        OutboxEventStatus outboxStatus = transactionTemplate.execute(status ->
+                outboxEventRepository.findAll().stream()
+                        .filter(event -> event.getPayload().contains("\"orderId\":" + orderId))
+                        .findFirst()
+                        .orElseThrow()
+                        .getStatus());
+        assertThat(outboxStatus).isEqualTo(OutboxEventStatus.PENDING);
     }
 }

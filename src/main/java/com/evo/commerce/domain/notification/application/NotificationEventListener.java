@@ -9,13 +9,14 @@ import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.io.IOException;
 
+@Slf4j
 @Component
 @RequiredArgsConstructor
 public class NotificationEventListener {
@@ -24,9 +25,8 @@ public class NotificationEventListener {
     private final UserRepository userRepository;
     private final SseEmitterRegistry sseEmitterRegistry;
 
-    @Async
     @EventListener
-    public void handleOrderPaid(OrderPaidEvent event) throws IOException {
+    public void handleOrderPaid(OrderPaidEvent event) {
         User user = userRepository.findById(event.userId())
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
 
@@ -38,7 +38,11 @@ public class NotificationEventListener {
         notificationRepository.save(notification);
 
         for (SseEmitter emitter : sseEmitterRegistry.findByUserId(event.userId())) {
-            emitter.send(SseEmitter.event().name("notification").data(notification.getMessage()));
+            try {
+                emitter.send(SseEmitter.event().name("notification").data(notification.getMessage()));
+            } catch (IOException e) {
+                log.warn("SSE 알림 전송에 실패했습니다. userId={}", event.userId(), e);
+            }
         }
     }
 }
