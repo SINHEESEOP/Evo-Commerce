@@ -36,10 +36,10 @@ docker compose up -d mysql-master mysql-slave redis rabbitmq
 - 이번 재현에서는 A(아직 저장 전)와 B가 서로 다른 로우를 다루는 시점이 겹치지 않아 `@Version` 충돌이나 데이터 초과 저장까지는 나타나지 않았지만, A의 트랜잭션이 조금 더 진행된 상태에서 B가 끼어들면 ISSUE-28에서 이미 겪었던 `ObjectOptimisticLockingFailureException`이 다시 발생할 수 있는 조건이 그대로 남아 있다.
 
 ### 상태
-[OPEN]
+[CLOSED]
 
 ### 원인 분석
-(해결 시 작성 예정)
+`RLock.tryLock(waitTime, leaseTime, unit)`처럼 `leaseTime`을 명시적으로 넘기면, Redisson은 락을 쥔 클라이언트가 살아있는지 여부와 무관하게 Redis 서버에 "정확히 `leaseTime` 뒤에 무조건 만료"라는 TTL 하나만 걸어두고 더는 개입하지 않는다. 락을 획득한 스레드가 임계 구역(이벤트 조회 → 참여 여부 확인 → 참여자 수 증가 → 주문/참여 기록 저장)을 처리하는 데 `leaseTime`(3000ms)보다 긴 시간이 걸리면, 그 스레드가 여전히 살아서 실행 중임에도 Redis는 TTL 만료로 락 키를 삭제해 버린다. 그 순간 락 획득을 기다리던 다른 스레드가 "락이 비어 있다"고 정상적으로 판단해 락을 획득하면서, 원래 하나만 들어가야 할 임계 구역에 두 스레드가 동시에 진입하는 결과로 이어졌다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+`tryLock()` 호출에서 `leaseTime` 인자를 제거하고 `tryLock(waitTime, unit)` 2-인자 오버로드를 사용하도록 바꿨다. `leaseTime`을 생략하면 Redisson이 내부 락 워치독(watchdog)을 등록한다 — 최초 TTL을 `lockWatchdogTimeout`(기본 30000ms)으로 설정하고, 락을 쥔 클라이언트가 살아있는 동안 그 1/3 주기(기본 10초)마다 백그라운드에서 TTL을 갱신(연장)한다. 트랜잭션이 아무리 오래 걸려도 클라이언트가 살아있는 한 TTL이 0에 도달하지 않으므로 조기 해제 자체가 발생하지 않는다. 반대로 프로세스가 실제로 죽어 `unlock()`을 영영 못 부르는 경우에는, 워치독 갱신도 함께 멈추므로 마지막 갱신 시점으로부터 최대 `lockWatchdogTimeout`(30초) 안에는 자동으로 풀린다 — "죽은 프로세스가 락을 영원히 붙들고 있지는 않는다"는 안전판은 그대로 유지된다. `TimeSaleParticipationLockLeaseTest`가 수정 전에는 결함을 재현하며 실패하고, 수정 후에는 같은 시나리오에서 뒤이은 참여자가 정상적으로 차단되는 것을 증명하며 통과함을 확인했다. 자세한 비교와 검토한 대안은 `docs/retrospectives/Step_3.9_리뷰.md` 참고.

@@ -80,7 +80,7 @@ class TimeSaleFacadeTest {
             return callback.doInTransaction(null);
         });
         lenient().when(redissonClient.getLock(ArgumentMatchers.anyString())).thenReturn(lock);
-        lenient().when(lock.tryLock(ArgumentMatchers.anyLong(), ArgumentMatchers.anyLong(), ArgumentMatchers.any(TimeUnit.class)))
+        lenient().when(lock.tryLock(ArgumentMatchers.anyLong(), ArgumentMatchers.any(TimeUnit.class)))
                 .thenReturn(true);
     }
 
