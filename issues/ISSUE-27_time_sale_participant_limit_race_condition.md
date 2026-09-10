@@ -32,10 +32,15 @@
 - 이 경쟁을 막을 수 있는 장치가 코드 어디에도 없다 — `SELECT ... FOR UPDATE` 같은 명시적 락도, `@Version`을 사용한 낙관적 락도, DB 레벨에서 참여 인원 상한을 강제하는 제약 조건(CHECK 제약, 트리거 등)도 없다. `time_sale_participations`에 걸린 유니크 제약은 "동일 사용자의 중복 참여"만 막을 뿐 "전체 참여 인원 상한"과는 무관하다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`countByTimeSaleEvent()`로 인원 수를 세는 시점과 `TimeSaleParticipation`을 저장하는 시점 사이에 시간 간격이 존재했다. 이 메서드는 이미 `@Transactional` 안에 있었지만, 트랜잭션 경계가 보장하는 원자성(내 트랜잭션 안의 SQL문이 전부 성공하거나 전부 취소된다는 것)과 여러 트랜잭션 사이의 상호 배제(내가 처리하는 동안 남이 끼어들지 못하게 막는 것)는 서로 다른 성질이라 트랜잭션만으로는 이 결함이 막히지 않았다. 동시에 시작된 트랜잭션들은 각자 자신의 시작 시점 스냅샷(REPEATABLE READ)만 보므로, 서로의 커밋을 아직 보지 못한 채 전부 낮은 카운트를 관측하고 상한 검사를 통과해버렸다. 격리 수준을 낮춰도 `COUNT` 자체가 락을 걸지 않는 조회라 결함은 사라지지 않는다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+2단계로 해결했다.
+
+1. `TimeSaleEvent`에 `@Version`과 `currentParticipants` 카운터를 추가하고, `increaseParticipant()`가 상한 검사와 카운터 증가를 한 번의 엔티티 갱신으로 처리하도록 바꿨다. 인원 초과는 이걸로 사라졌지만, 재시도 로직이 없어 동시 UPDATE가 MySQL InnoDB 데드락으로 이어져 정원이 남았음에도 대부분의 요청이 실패했다([ISSUE-28]로 별도 추적 후 `@Retryable` + `TransactionTemplate`로 해결).
+2. 이후 경합이 몰리는 구간의 응답 지연을 줄이기 위해 Redis 분산 락(Redisson)으로 전환했다. 이벤트별 락 키(`time-sale:participation-lock:{eventId}`)로 동시 접근 자체를 애플리케이션 레이어에서 막아, 낙관적 락+재시도 대비 평균 응답 시간이 약 596ms에서 약 169ms로 줄었다(약 3.5배). `@Version`은 락 순서를 잘못 구현했을 때의 마지막 방어선으로 유지했다.
+
+상세 비교와 실측 수치는 [`docs/wiki/03_concurrency_control_deep_dive.md`](../docs/wiki/03_concurrency_control_deep_dive.md) 참고.
