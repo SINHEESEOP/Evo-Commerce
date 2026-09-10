@@ -1,5 +1,6 @@
 package com.evo.commerce.global.config;
 
+import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceProperties;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -21,9 +22,13 @@ public class DataSourceConfig {
         return new DataSourceProperties();
     }
 
+    // spring.datasource.master.hikari.* 를 이 빈에 바인딩하기 위해 타입을 HikariDataSource로 고정한다.
+    // 그냥 initializeDataSourceBuilder().build()만 쓰면 타입은 여전히 HikariDataSource로 잡히지만,
+    // @ConfigurationProperties가 프록시 생성 시점에 바인딩할 구체 타입을 알 수 없어 커넥션 풀 설정이 무시된다.
     @Bean
+    @ConfigurationProperties("spring.datasource.master.hikari")
     public DataSource masterDataSource(@Qualifier("masterDataSourceProperties") DataSourceProperties properties) {
-        return properties.initializeDataSourceBuilder().build();
+        return properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
     }
 
     @Bean
@@ -33,8 +38,9 @@ public class DataSourceConfig {
     }
 
     @Bean
+    @ConfigurationProperties("spring.datasource.slave.hikari")
     public DataSource slaveDataSource(@Qualifier("slaveDataSourceProperties") DataSourceProperties properties) {
-        return properties.initializeDataSourceBuilder().build();
+        return properties.initializeDataSourceBuilder().type(HikariDataSource.class).build();
     }
 
     @Primary
