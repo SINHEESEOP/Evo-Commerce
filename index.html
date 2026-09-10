@@ -61,7 +61,7 @@
   }
 
   *{box-sizing:border-box;}
-  @page{ size:A4; margin:10mm 14mm; }
+  @page{ size:A4; margin:8mm 14mm; }
   html{background:var(--bg);}
   body{
     margin:0;
@@ -88,8 +88,8 @@
 
   /* ---------- header ---------- */
   header.hero{
-    display:flex; flex-direction:column; gap:9px;
-    padding-bottom:12px; border-bottom:1px solid var(--line);
+    display:flex; flex-direction:column; gap:7px;
+    padding-bottom:9px; border-bottom:1px solid var(--line);
   }
   .eyebrow{
     font-family:"IBM Plex Mono",monospace;
@@ -99,24 +99,19 @@
     display:flex; align-items:center; gap:8px;
   }
   .eyebrow a{ text-decoration:none; border-bottom:1px solid currentColor; }
-  h1.title{ font-size:33px; line-height:1.02; }
+  h1.title{ font-size:29px; line-height:1.02; }
   p.tagline{
     font-size:15.5px; color:var(--sub); margin:0;
   }
   .meta-row{
-    display:flex; flex-wrap:wrap; gap:7px 9px; margin-top:2px;
-  }
-  .chip{
     font-family:"IBM Plex Mono",monospace;
     font-size:11.5px;
-    padding:4px 9px;
-    border:1px solid var(--line);
-    border-radius:5px;
     color:var(--sub);
-    background:var(--surface);
-    white-space:nowrap;
+    margin-top:1px;
+    line-height:1.5;
   }
-  .chip.on{ border-color:var(--accent); color:var(--accent); }
+  .meta-row b{ color:var(--accent); font-weight:600; }
+  .meta-row .sep{ color:var(--line); margin:0 2px; }
 
   .stat-row{
     display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
@@ -138,31 +133,32 @@
   .stat .label{ font-size:11px; color:var(--sub); line-height:1.3; }
 
   /* ---------- overview ---------- */
-  section.overview{ padding:13px 0; border-bottom:1px solid var(--line); }
+  section.overview{ padding:10px 0; border-bottom:1px solid var(--line); }
   section.overview p{ font-size:13.5px; color:var(--sub); margin:0; line-height:1.6; }
   section.overview p + p{ margin-top:8px; }
   section.overview b{ color:var(--ink); font-weight:600; }
 
   /* ---------- case studies ---------- */
   .case{
-    padding:6px 0;
+    padding:5px 0;
     border-bottom:1px solid var(--line);
   }
   .case:last-of-type{ border-bottom:none; }
-  .case-head{ display:flex; flex-direction:column; gap:3px; margin-bottom:8px; break-inside:avoid-page; break-after:avoid-page; }
+  .case-head{ display:flex; flex-direction:column; gap:3px; margin-bottom:6px; break-inside:avoid-page; break-after:avoid-page; }
   .case-eyebrow{
     font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.08em;
     color:var(--faint); text-transform:uppercase;
   }
-  .case h2{ font-size:16.5px; line-height:1.2; }
+  .case h2{ font-size:15px; line-height:1.2; }
   .case-stack{ font-family:"IBM Plex Mono",monospace; font-size:11px; color:var(--sub); margin-top:1px; }
 
   .block{ margin-top:9px; }
   .block > .block-label{
     font-family:"IBM Plex Mono",monospace; font-size:10.5px; letter-spacing:.05em;
-    color:var(--accent); text-transform:uppercase; margin-bottom:4px; font-weight:600;
+    color:var(--accent); text-transform:uppercase; margin-bottom:5px; font-weight:600;
+    padding-bottom:2px; border-bottom:1px solid var(--line);
   }
-  .block p{ font-size:12.5px; color:var(--sub); line-height:1.5; margin:0 0 5px; }
+  .block p{ font-size:12.5px; color:var(--sub); line-height:1.6; margin:0 0 6px; }
   .block p:last-child{ margin-bottom:0; }
   .block p b{ color:var(--ink); font-weight:600; }
 
@@ -170,36 +166,35 @@
     background:var(--code-bg); color:var(--code-ink);
     border-radius:7px; padding:10px 13px;
     font-family:"IBM Plex Mono",monospace; font-size:11px; line-height:1.5;
-    overflow-x:auto; margin:6px 0;
+    overflow-x:auto; margin:4px 0;
     break-inside:avoid-page;
   }
   pre.term .fail{ color:#e88; }
   pre.term .ok{ color:var(--code-accent); }
   pre.term .dim{ color:#8b9299; }
 
-  /* compact alternatives table */
-  table.alt-table{ width:100%; border-collapse:collapse; margin-top:2px; }
-  table.alt-table tr{ border-top:1px solid var(--line); }
-  table.alt-table tr:first-child{ border-top:none; }
-  table.alt-table td{ padding:4px 4px; vertical-align:top; font-size:11.5px; }
-  table.alt-table td.name{
-    width:118px; font-family:"IBM Plex Mono",monospace; font-weight:600; color:var(--ink);
+  /* alternatives cards */
+  .alt-list{ display:flex; flex-direction:column; gap:5px; margin-top:2px; }
+  .alt{
+    display:flex; flex-direction:column; gap:3px;
+    padding:6px 10px; background:var(--surface); border:1px solid var(--line); border-radius:7px;
+    break-inside:avoid-page;
   }
-  table.alt-table td.name .sub{ display:block; font-weight:400; color:var(--faint); font-size:10px; margin-top:2px; }
-  table.alt-table td.desc{ color:var(--sub); line-height:1.5; }
-  table.alt-table tr.chosen td{ background:var(--accent-soft); }
-  table.alt-table tr.chosen td.name{ color:var(--accent); }
-  table.alt-table tr.chosen td:first-child{ border-radius:5px 0 0 5px; }
-  table.alt-table tr.chosen td:last-child{ border-radius:0 5px 5px 0; }
-  table.alt-table tr.chosen td.name::after{ content:" ✓"; }
+  .alt.chosen{ border-color:var(--accent); background:var(--accent-soft); }
+  .alt-head{ display:flex; align-items:baseline; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .alt-name{ font-family:"IBM Plex Mono",monospace; font-size:12px; font-weight:600; color:var(--ink); }
+  .alt-name .alt-sub{ font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:400; color:var(--faint); margin-left:5px; }
+  .alt-name .alt-sub::before{ content:"· "; }
+  .alt-badge{ font-family:"IBM Plex Mono",monospace; font-size:10.5px; font-weight:700; color:var(--accent); white-space:nowrap; }
+  .alt-desc{ font-size:11.5px; color:var(--sub); line-height:1.5; }
 
   .callout{
     border-left:3px solid var(--accent);
     background:var(--surface-2);
-    padding:6px 12px; border-radius:0 7px 7px 0;
-    font-size:11.5px; color:var(--sub); line-height:1.45;
+    padding:5px 12px; border-radius:0 7px 7px 0;
+    font-size:11.5px; color:var(--sub); line-height:1.4;
     break-inside:avoid-page;
-    margin-top:5px;
+    margin-top:4px;
   }
   .callout b{ color:var(--ink); }
 
@@ -210,18 +205,17 @@
 
   /* ---------- footer ---------- */
   footer{
-    padding:8px 0 4px;
-    display:flex; flex-wrap:wrap; justify-content:space-between; gap:14px;
-    align-items:flex-end;
+    padding:5px 0 2px;
     break-inside:avoid-page;
   }
-  footer .foot-links{ display:flex; flex-direction:column; gap:4px; }
+  footer .foot-links{ font-family:"IBM Plex Mono",monospace; font-size:11px; }
+  footer .foot-links .sep{ color:var(--line); margin:0 5px; }
   footer a.foot-link{
-    font-family:"IBM Plex Mono",monospace; font-size:11.5px; text-decoration:none;
+    text-decoration:none;
     color:var(--sub); border-bottom:1px solid var(--line);
   }
   footer a.foot-link:hover{ color:var(--accent); border-color:var(--accent); }
-  footer .foot-note{ font-size:11px; color:var(--faint); text-align:right; }
+  footer .foot-note{ font-size:11px; color:var(--faint); margin-top:3px; }
 
   @media print{
     html, body{ background:#fff; }
@@ -233,8 +227,6 @@
     .wrap{ padding:32px 18px 28px; }
     h1.title{ font-size:30px; }
     .stat-row{ grid-template-columns:1fr; }
-    table.alt-table, table.alt-table tbody, table.alt-table tr, table.alt-table td{ display:block; width:100%; }
-    table.alt-table td.name{ padding-bottom:0; }
   }
 </style>
 </head>
@@ -249,15 +241,7 @@
     </div>
     <h1 class="title">Evo-Commerce</h1>
     <p class="tagline">타임세일 같은 순간 트래픽에서 벌어지는 동시성 문제를 직접 만들고, 겪고, 고치는 과정을 기록하는 이커머스 백엔드. 신희섭 · 2026.08 – 현재</p>
-    <div class="meta-row">
-      <span class="chip on">Java 21</span>
-      <span class="chip on">Spring Boot 3.5</span>
-      <span class="chip">MySQL 8 (Master/Slave)</span>
-      <span class="chip">Redis · Redisson</span>
-      <span class="chip">Toss Payments</span>
-      <span class="chip">ArchUnit</span>
-      <span class="chip">Docker Compose</span>
-    </div>
+    <div class="meta-row"><b>Java 21</b><span class="sep">·</span><b>Spring Boot 3.5</b><span class="sep">·</span>MySQL 8 (Master/Slave)<span class="sep">·</span>Redis · Redisson<span class="sep">·</span>Toss Payments<span class="sep">·</span>ArchUnit<span class="sep">·</span>Docker Compose</div>
     <div class="stat-row">
       <div class="stat">
         <div class="num">3.5×</div>
@@ -288,7 +272,7 @@
     </div>
 
     <div class="block">
-      <div class="block-label">문제</div>
+      <div class="block-label">문제 상황</div>
       <p>선착순 <code class="inline">participantLimit</code>을 초과하면 안 되는데, <code class="inline">COUNT</code>로 상한을 확인한 뒤 저장하는 구조에서 상한 3명 이벤트에 10명이 동시 참여하자 매번 10명 전원이 성공했습니다.</p>
       <pre class="term">expected: 3
 <span class="fail">but was: 10</span></pre>
@@ -297,29 +281,29 @@
 
     <div class="block">
       <div class="block-label">검토한 대안</div>
-      <table class="alt-table">
-        <tr>
-          <td class="name">비관적 락<span class="sub">SELECT FOR UPDATE</span></td>
-          <td class="desc">조회 시점에 행을 잠가 접근을 막지만, 락을 쥔 트랜잭션이 끝날 때까지 나머지가 커넥션을 붙든 채 대기 — 커넥션 풀 고갈 위험으로 기각.</td>
-        </tr>
-        <tr>
-          <td class="name">낙관적 락<span class="sub">@Version + 재시도</span></td>
-          <td class="desc">1단계로 적용했지만 재시도 없이는 데드락, 재시도를 붙이면 정합성은 맞아도 롤백·백오프로 느려짐.</td>
-        </tr>
-        <tr class="chosen">
-          <td class="name">Redis 분산락<span class="sub">Redisson RLock</span></td>
-          <td class="desc">이벤트별 락으로 동시 접근 자체를 차단 — MySQL은 애초에 동시 쓰기 경합을 겪지 않음.</td>
-        </tr>
-      </table>
+      <div class="alt-list">
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">비관적 락<span class="alt-sub">SELECT FOR UPDATE</span></span></div>
+          <div class="alt-desc">조회 시점에 행을 잠가 접근을 막지만, 락을 쥔 트랜잭션이 끝날 때까지 나머지가 커넥션을 붙든 채 대기해야 해서 커넥션 풀 고갈 위험으로 기각.</div>
+        </div>
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">낙관적 락<span class="alt-sub">@Version + 재시도</span></span></div>
+          <div class="alt-desc">1단계로 적용했지만 재시도 없이는 데드락, 재시도를 붙이면 정합성은 맞아도 롤백·백오프로 느려짐.</div>
+        </div>
+        <div class="alt chosen">
+          <div class="alt-head"><span class="alt-name">Redis 분산락<span class="alt-sub">Redisson RLock</span></span><span class="alt-badge">✓ 채택</span></div>
+          <div class="alt-desc">이벤트별 락으로 동시 접근 자체를 차단해 MySQL은 애초에 동시 쓰기 경합을 겪지 않음.</div>
+        </div>
+      </div>
     </div>
 
     <div class="block">
-      <div class="block-label">해결 &amp; 결과</div>
-      <p>낙관적 락만 적용하자 동시 UPDATE가 InnoDB 잠금 순서를 꼬아 데드락이 나 1명만 성공했습니다. <code class="inline">@Retryable</code> + 지수 백오프를 추가해 정합성은 맞췄지만 평균 596ms가 걸렸습니다. 최종적으로 이벤트별 락 키(<code class="inline">time-sale:participation-lock:{eventId}</code>)를 쓰는 Redisson 분산락으로 교체했습니다 — <code class="inline">TransactionTemplate</code>으로 커밋 이후에만 <code class="inline">unlock()</code>하도록 순서를 맞췄고, <code class="inline">@Version</code>은 마지막 방어선으로 남겼습니다.</p>
-      <p>3회 반복 측정 결과 두 전략 모두 3/3 정합성을 지켰지만, <b>Redis 분산락(169ms)</b>이 낙관적 락+재시도(596ms)보다 <b>약 3.5배</b> 빨랐습니다 — 분산락은 임계 구역에 한 번에 하나만 들여보내 MySQL이 쓰기 경합 자체를 겪지 않기 때문입니다.</p>
+      <div class="block-label">적용한 해결책 &amp; 결과</div>
+      <p>낙관적 락만 적용하자 동시 UPDATE가 InnoDB 잠금 순서를 꼬아 데드락이 나 1명만 성공했습니다. <code class="inline">@Retryable</code> + 지수 백오프를 추가해 정합성은 맞췄지만 평균 596ms가 걸렸습니다. 최종적으로 이벤트별 락 키(<code class="inline">time-sale:participation-lock:{eventId}</code>)를 쓰는 Redisson 분산락으로 교체했습니다. <code class="inline">TransactionTemplate</code>으로 커밋 이후에만 <code class="inline">unlock()</code>하도록 순서를 맞췄고, <code class="inline">@Version</code>은 마지막 방어선으로 남겼습니다.</p>
+      <p>3회 반복 측정 결과 두 전략 모두 3/3 정합성을 지켰지만, <b>Redis 분산락(169ms)</b>이 낙관적 락+재시도(596ms)보다 <b>약 3.5배</b> 빨랐습니다. 분산락은 임계 구역에 한 번에 하나만 들여보내 MySQL이 쓰기 경합 자체를 겪지 않기 때문입니다.</p>
     </div>
 
-    <div class="callout"><b>일반화</b> — 정합성을 지키는 전략과 그 부작용(데드락으로 인한 성공률 저하)은 따로 검증해야 합니다. "예외가 안 난다"가 아니라 "정원 안에서 최대한 많은 요청이 성공하는가"까지 측정해야 진짜 해결 여부를 알 수 있습니다.</div>
+    <div class="callout"><b>일반화:</b> 정합성을 지키는 전략과 그 부작용(데드락으로 인한 성공률 저하)은 따로 검증해야 합니다. "예외가 안 난다"가 아니라 "정원 안에서 최대한 많은 요청이 성공하는가"까지 측정해야 진짜 해결 여부를 알 수 있습니다.</div>
   </article>
 
   <!-- CASE 2 : IDEMPOTENCY -->
@@ -331,30 +315,30 @@
     </div>
 
     <div class="block">
-      <div class="block-label">문제</div>
+      <div class="block-label">문제 상황</div>
       <p>이미 <code class="inline">PAID</code>인 주문에 같은 결제완료 웹훅이 재전달되면 <code class="inline">order.pay()</code>가 매번 그대로 호출돼 <code class="inline">INVALID_STATUS_TRANSITION</code> 예외로 실패했습니다. Toss는 200이 아니면 계속 재전송하므로 같은 오류가 끝없이 반복됐습니다.</p>
     </div>
 
     <div class="block">
       <div class="block-label">검토한 대안</div>
-      <table class="alt-table">
-        <tr>
-          <td class="name">멱등성 키<span class="sub">이벤트 ID 이력 테이블</span></td>
-          <td class="desc">고유 ID를 부여하고 처리 이력을 별도 테이블에 기록. 웹훅 부수효과가 여러 개로 늘어날 때 필요해지는 방식.</td>
-        </tr>
-        <tr class="chosen">
-          <td class="name">목표 상태 확인<span class="sub">Order.status 조회</span></td>
-          <td class="desc">이미 목표 상태(PAID)면 조용히 종료 — 부수효과가 상태 전이뿐이라 별도 이력 테이블 없이도 안전.</td>
-        </tr>
-      </table>
+      <div class="alt-list">
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">멱등성 키<span class="alt-sub">이벤트 ID 이력 테이블</span></span></div>
+          <div class="alt-desc">고유 ID를 부여하고 처리 이력을 별도 테이블에 기록. 웹훅 부수효과가 여러 개로 늘어날 때 필요해지는 방식.</div>
+        </div>
+        <div class="alt chosen">
+          <div class="alt-head"><span class="alt-name">목표 상태 확인<span class="alt-sub">Order.status 조회</span></span><span class="alt-badge">✓ 채택</span></div>
+          <div class="alt-desc">이미 목표 상태(PAID)면 조용히 종료. 부수효과가 상태 전이뿐이라 별도 이력 테이블 없이도 안전.</div>
+        </div>
+      </div>
     </div>
 
     <div class="block">
-      <div class="block-label">해결 &amp; 결과</div>
+      <div class="block-label">적용한 해결책 &amp; 결과</div>
       <p><code class="inline">handlePaymentWebhook()</code>이 <code class="inline">order.pay()</code> 호출 전에 <code class="inline">order.getStatus() == PAID</code>를 먼저 확인하도록 바꿨습니다. 같은 주문에 웹훅을 두 번 처리해도 두 번째 호출이 예외 없이 200으로 끝나는 것을 회귀 테스트로 검증했습니다.</p>
     </div>
 
-    <div class="callout"><b>스코프 노트</b> — 이미 <code class="inline">CANCELLED</code>인 주문에 결제완료 웹훅이 오는 경우는 결제·취소가 경쟁하는 별도의 정합성 문제라 이번 수정 범위 밖으로 명시하고 남겨뒀습니다.</div>
+    <div class="callout"><b>스코프 노트:</b> 이미 <code class="inline">CANCELLED</code>인 주문에 결제완료 웹훅이 오는 경우는 결제·취소가 경쟁하는 별도의 정합성 문제라 이번 수정 범위 밖으로 명시하고 남겨뒀습니다.</div>
   </article>
 
   <!-- CASE 3 : ARCHITECTURE -->
@@ -366,7 +350,7 @@
     </div>
 
     <div class="block">
-      <div class="block-label">문제</div>
+      <div class="block-label">문제 상황</div>
       <p>도메인 패키지를 <code class="inline">presentation</code>/<code class="inline">application</code>/<code class="inline">domain</code> 계층으로 나눴는데도, 다른 도메인의 표현 계층이 이 도메인의 도메인 계층을 직접 참조하는 코드가 경고 없이 컴파일됐습니다.</p>
       <pre class="term">import com.evo.commerce.domain.order.domain.OrderRepository;
 
@@ -378,37 +362,35 @@ public class ProductController {
 
     <div class="block">
       <div class="block-label">검토한 대안</div>
-      <table class="alt-table">
-        <tr>
-          <td class="name">package-private<span class="sub">접근 제한자</span></td>
-          <td class="desc">같은 도메인 내부 허용 + 다른 도메인 표현 계층만 차단하는 세밀한 규칙을 표현할 수 없어 기각.</td>
-        </tr>
-        <tr>
-          <td class="name">멀티모듈 / JPMS<span class="sub">물리적 컴파일 경계</span></td>
-          <td class="desc">원천 차단 가능하지만, 도메인 4개 규모에 모듈 경계를 새로 설계·유지하는 비용이 이득보다 큼.</td>
-        </tr>
-        <tr class="chosen">
-          <td class="name">ArchUnit<span class="sub">테스트 기반 강제</span></td>
-          <td class="desc">"이 패키지는 저 패키지에 의존 금지"를 테스트 코드로 표현 — 구조 변경 없이 위반 시 테스트 실패.</td>
-        </tr>
-      </table>
+      <div class="alt-list">
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">package-private<span class="alt-sub">접근 제한자</span></span></div>
+          <div class="alt-desc">같은 도메인 내부 허용 + 다른 도메인 표현 계층만 차단하는 세밀한 규칙을 표현할 수 없어 기각.</div>
+        </div>
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">멀티모듈 / JPMS<span class="alt-sub">물리적 컴파일 경계</span></span></div>
+          <div class="alt-desc">원천 차단 가능하지만, 도메인 4개 규모에 모듈 경계를 새로 설계·유지하는 비용이 이득보다 큼.</div>
+        </div>
+        <div class="alt chosen">
+          <div class="alt-head"><span class="alt-name">ArchUnit<span class="alt-sub">테스트 기반 강제</span></span><span class="alt-badge">✓ 채택</span></div>
+          <div class="alt-desc">"이 패키지는 저 패키지에 의존 금지"를 테스트 코드로 표현. 구조 변경 없이 위반 시 테스트 실패.</div>
+        </div>
+      </div>
     </div>
 
     <div class="block">
-      <div class="block-label">해결 &amp; 결과</div>
-      <p>규칙 적용 중 <code class="inline">@RequireRole(UserRole.MASTER)</code>처럼 도메인 enum을 애너테이션 값으로 받는 것도 "타입 참조"로 취급된다는 새 위반을 잡았습니다. <code class="inline">UserRole</code> 대신 <code class="inline">String</code>으로 바꿔 결합을 없앴습니다 — Spring Security가 enum 대신 문자열로 역할을 표현하는 것도 같은 이유입니다.</p>
+      <div class="block-label">적용한 해결책 &amp; 결과</div>
+      <p>규칙 적용 중 <code class="inline">@RequireRole(UserRole.MASTER)</code>처럼 도메인 enum을 애너테이션 값으로 받는 것도 "타입 참조"로 취급된다는 새 위반을 잡았습니다. <code class="inline">UserRole</code> 대신 <code class="inline">String</code>으로 바꿔 결합을 없앴습니다. Spring Security가 enum 대신 문자열로 역할을 표현하는 것도 같은 이유입니다.</p>
     </div>
 
-    <div class="callout"><b>일반화</b> — 폴더 재배치와 "아키텍처 규칙 강제"는 서로 다른 문제입니다. 전자는 후자의 필요조건이지 충분조건이 아닙니다. 좋은 제약은 문제를 감추는 대신 드러냅니다.</div>
+    <div class="callout"><b>일반화:</b> 폴더 재배치와 "아키텍처 규칙 강제"는 서로 다른 문제입니다. 전자는 후자의 필요조건이지 충분조건이 아닙니다. 좋은 제약은 문제를 감추는 대신 드러냅니다.</div>
   </article>
 
   <footer>
     <div class="foot-links">
-      <a class="foot-link" href="https://github.com/SINHEESEOP/Evo-Commerce" target="_blank" rel="noopener">→ github.com/SINHEESEOP/Evo-Commerce</a>
-      <a class="foot-link" href="https://github.com/SINHEESEOP/Evo-Commerce/wiki" target="_blank" rel="noopener">→ 전체 트러블슈팅 딥다이브 (GitHub Wiki)</a>
-      <a class="foot-link" href="mailto:shfurwnd97@gmail.com">→ shfurwnd97@gmail.com</a>
+      <a class="foot-link" href="https://github.com/SINHEESEOP/Evo-Commerce" target="_blank" rel="noopener">github.com/SINHEESEOP/Evo-Commerce</a><span class="sep">·</span><a class="foot-link" href="https://github.com/SINHEESEOP/Evo-Commerce/wiki" target="_blank" rel="noopener">GitHub Wiki</a><span class="sep">·</span><a class="foot-link" href="mailto:shfurwnd97@gmail.com">shfurwnd97@gmail.com</a>
     </div>
-    <div class="foot-note">신희섭 · Backend Engineer<br>010-2996-4913</div>
+    <div class="foot-note">신희섭 · Backend Engineer · 010-2996-4913</div>
   </footer>
 
 </div>
