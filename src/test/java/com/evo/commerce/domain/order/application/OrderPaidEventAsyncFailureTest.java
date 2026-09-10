@@ -22,10 +22,12 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.time.Duration;
 import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
@@ -82,7 +84,7 @@ class OrderPaidEventAsyncFailureTest {
     }
 
     @Test
-    void 알림_저장이_실패해도_웹훅_처리_자체는_예외_없이_끝난다() {
+    void 컨슈머_처리가_실패해도_브로커_컨펌을_받은_아웃박스는_발행_완료로_남는다() {
         User user = userRepository.save(User.builder()
                 .email("notify-async-" + System.nanoTime() + "@evo-commerce.com")
                 .password("plain1234!")
@@ -118,14 +120,15 @@ class OrderPaidEventAsyncFailureTest {
 
         outboxEventPublisher.publishPendingEvents();
 
-        verify(notificationRepository).save(any());
-
         OutboxEventStatus outboxStatus = transactionTemplate.execute(status ->
                 outboxEventRepository.findAll().stream()
                         .filter(event -> event.getPayload().contains("\"orderId\":" + orderId))
                         .findFirst()
                         .orElseThrow()
                         .getStatus());
-        assertThat(outboxStatus).isEqualTo(OutboxEventStatus.PENDING);
+        assertThat(outboxStatus).isEqualTo(OutboxEventStatus.SENT);
+
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                verify(notificationRepository).save(any()));
     }
 }

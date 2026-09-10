@@ -43,10 +43,17 @@
 - `RabbitMQConfig`와 `OrderPaidMessageListener` 어디에도 Dead Letter Exchange, 최대 재시도 횟수, 재시도 백오프 설정이 없다. Spring AMQP 리스너 컨테이너의 기본 에러 처리기(`ConditionalRejectingErrorHandler`)는 비즈니스 예외를 "재시도 가능한 실패"로 간주해 메시지를 `basic.reject(requeue=true)`로 큐에 되돌린다. 그 결과 존재하지 않는 사용자를 참조하는 것처럼 영구적으로 실패하는 메시지는 같은 큐를 영원히 맴돈다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`OutboxEventPublisher.dispatch()`가 `rabbitTemplate.convertAndSend()`의 리턴(예외 없음)을 "발행 완료"의 근거로 삼았다. `convertAndSend()`의 기본 동작은 메시지를 로컬 AMQP 채널에 써 보내는 것까지만 책임지며, 브로커가 그 메시지를 실제로 수신·라우팅했는지는 별도의 확인 절차(퍼블리셔 컨펌) 없이는 알 수 없다. 게다가 발행(publish)과 소비(consume)는 서로 다른 스레드에서 비동기로 분리되어 있어, 컨슈머(`OrderPaidMessageListener`)가 나중에 예외를 던져도 그 사실이 발행자 쪽으로 전파될 방법이 없다.
+
+여기에 `RabbitMQConfig`가 선언한 큐에 Dead Letter Exchange가 없고 컨슈머 쪽에도 재시도 한도가 없어서, 영구적으로 실패하는 메시지(예: 존재하지 않는 사용자 참조)가 Spring AMQP 기본 에러 핸들러(`ConditionalRejectingErrorHandler`)의 `basic.reject(requeue=true)` 동작에 의해 같은 큐로 무한히 되돌아왔다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+두 층에서 나눠 해결했다.
+
+1. **발행 확인**: `RabbitTemplate.invoke(operations -> { convertAndSend(...); waitForConfirmsOrDie(timeout); ... })` 패턴으로 바꿔, 브로커가 메시지를 실제로 컨펌한 뒤에만 outbox를 `SENT`로 확정하도록 했다. 컨펌이 타임아웃되거나 nack되면 예외가 발생해 기존 `catch` 블록이 그대로 잡아 `PENDING`으로 남긴다. `RabbitTemplate`에 `mandatory(true)` + `ReturnsCallback`도 추가해, 라우팅 자체가 안 되는 메시지를 로그로 가시화했다.
+2. **컨슈머 재시도 한도 + DLQ**: `order.paid.queue`에 `x-dead-letter-exchange`/`x-dead-letter-routing-key`를 지정해 `order.paid.queue.dlq`로 격리 경로를 만들고, `spring.rabbitmq.listener.simple.retry`로 최대 5회(1초 → 2배씩 증가, 최대 10초) 재시도 후 소진되면 `RejectAndDontRequeueRecoverer`가 메시지를 거부(requeue 안 함)해 DLQ로 보내도록 했다. 이제 영구 실패 메시지는 무한 루프 대신 최대 몇 차례의 재시도 뒤 DLQ에서 멈춘다.
+
+의사결정 배경과 검토했던 대안은 [`docs/decisions/015_rabbitmq_publish_confirmation_and_retry_policy.md`](../docs/decisions/015_rabbitmq_publish_confirmation_and_retry_policy.md) 참고.

@@ -1,97 +1,88 @@
 package com.evo.commerce.domain.order.infrastructure;
 
-import com.evo.commerce.domain.notification.domain.NotificationRepository;
 import com.evo.commerce.domain.order.domain.OutboxEvent;
 import com.evo.commerce.domain.order.domain.OutboxEventRepository;
 import com.evo.commerce.domain.order.domain.OutboxEventStatus;
-import com.evo.commerce.domain.user.domain.User;
-import com.evo.commerce.domain.user.domain.UserRepository;
-import com.evo.commerce.domain.user.domain.UserRole;
-import org.junit.jupiter.api.AfterEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.AmqpException;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import static org.assertj.core.api.Assertions.assertThat;
+import java.util.List;
+import java.util.function.Consumer;
 
-@SpringBootTest
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.BDDMockito.given;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+
+@ExtendWith(MockitoExtension.class)
 class OutboxEventPublisherTest {
 
-    @Autowired
-    OutboxEventPublisher outboxEventPublisher;
-
-    @Autowired
+    @Mock
     OutboxEventRepository outboxEventRepository;
 
-    @Autowired
-    UserRepository userRepository;
+    @Mock
+    RabbitTemplate rabbitTemplate;
 
-    @Autowired
-    NotificationRepository notificationRepository;
-
-    @Autowired
+    @Mock
     TransactionTemplate transactionTemplate;
 
-    private Long outboxEventId;
-    private Long userId;
+    OutboxEventPublisher outboxEventPublisher;
 
-    @AfterEach
-    void cleanUp() {
-        if (outboxEventId != null) {
-            outboxEventRepository.deleteById(outboxEventId);
-        }
-        if (userId != null) {
-            notificationRepository.deleteByUser_Id(userId);
-            userRepository.deleteById(userId);
-        }
+    @BeforeEach
+    void setUp() {
+        outboxEventPublisher = new OutboxEventPublisher(outboxEventRepository, rabbitTemplate, new ObjectMapper(), transactionTemplate);
     }
 
     @Test
-    void 발행에_성공한_이벤트는_발행_완료_상태로_바뀐다() {
-        User user = userRepository.save(User.builder()
-                .email("outbox-success-" + System.nanoTime() + "@evo-commerce.com")
-                .password("plain1234!")
-                .name("테스터")
-                .role(UserRole.USER)
-                .build());
-        userId = user.getId();
-
-        OutboxEvent event = outboxEventRepository.save(OutboxEvent.builder()
+    void 브로커가_발행을_컨펌하면_이벤트는_발행_완료_상태로_바뀐다() {
+        OutboxEvent event = OutboxEvent.builder()
                 .eventType("ORDER_PAID")
-                .payload("{\"orderId\":1,\"userId\":" + userId + "}")
+                .payload("{\"orderId\":1,\"userId\":1}")
                 .status(OutboxEventStatus.PENDING)
-                .build());
-        outboxEventId = event.getId();
+                .build();
+        given(outboxEventRepository.findByStatus(OutboxEventStatus.PENDING)).willReturn(List.of(event));
+        given(rabbitTemplate.invoke(any())).willReturn(null);
+        runTransactionSynchronously();
 
         outboxEventPublisher.publishPendingEvents();
 
-        OutboxEventStatus status = reloadViaMaster();
-        assertThat(status).isEqualTo(OutboxEventStatus.SENT);
+        assertThat(event.getStatus()).isEqualTo(OutboxEventStatus.SENT);
+        verify(outboxEventRepository).save(event);
     }
 
     @Test
-    void 발행에_실패한_이벤트는_대기_상태로_남아_다음_스케줄에서_재시도된다() {
-        OutboxEvent event = outboxEventRepository.save(OutboxEvent.builder()
+    void 브로커_컨펌을_받지_못하면_이벤트는_대기_상태로_남아_다음_스케줄에서_재시도된다() {
+        OutboxEvent event = OutboxEvent.builder()
                 .eventType("ORDER_PAID")
-                .payload("{\"orderId\":1,\"userId\":999999}")
+                .payload("{\"orderId\":1,\"userId\":1}")
                 .status(OutboxEventStatus.PENDING)
-                .build());
-        outboxEventId = event.getId();
+                .build();
+        given(outboxEventRepository.findByStatus(OutboxEventStatus.PENDING)).willReturn(List.of(event));
+        given(rabbitTemplate.invoke(any())).willThrow(new AmqpException("퍼블리셔 컨펌 타임아웃"));
 
         outboxEventPublisher.publishPendingEvents();
 
-        OutboxEventStatus status = reloadViaMaster();
-        assertThat(status).isEqualTo(OutboxEventStatus.PENDING);
+        assertThat(event.getStatus()).isEqualTo(OutboxEventStatus.PENDING);
+        verify(outboxEventRepository, never()).save(event);
     }
 
-    /**
-     * findById()는 readOnly 트랜잭션으로 라우팅되어 슬레이브에서 읽는다.
-     * 방금 마스터에 커밋한 값을 곧바로 검증할 때는 복제 지연 때문에 슬레이브에
-     * 아직 반영되지 않았을 수 있으므로, 쓰기 트랜잭션으로 감싸 마스터에서 직접 읽는다.
-     */
-    private OutboxEventStatus reloadViaMaster() {
-        return transactionTemplate.execute(status ->
-                outboxEventRepository.findById(outboxEventId).orElseThrow().getStatus());
+    @SuppressWarnings("unchecked")
+    private void runTransactionSynchronously() {
+        doAnswer(invocation -> {
+            Consumer<TransactionStatus> action = invocation.getArgument(0);
+            action.accept(mock(TransactionStatus.class));
+            return null;
+        }).when(transactionTemplate).executeWithoutResult(any());
     }
 }

@@ -56,6 +56,9 @@ dependencies {
 
     // 패키지 계층 간 의존 방향을 테스트로 강제하기 위한 아키텍처 검증 라이브러리
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.3.0'
+
+    // 비동기 메시지 컨슈머가 처리를 마칠 때까지 폴링 대기하며 검증하기 위한 라이브러리
+    testImplementation 'org.awaitility:awaitility:4.2.2'
 }
 
 tasks.named('test') {

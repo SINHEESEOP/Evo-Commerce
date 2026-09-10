@@ -19,6 +19,8 @@ import java.util.List;
 @RequiredArgsConstructor
 public class OutboxEventPublisher {
 
+    private static final long PUBLISHER_CONFIRM_TIMEOUT_MILLIS = 5000;
+
     private final OutboxEventRepository outboxEventRepository;
     private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
@@ -36,7 +38,7 @@ public class OutboxEventPublisher {
     private void dispatch(OutboxEvent event) {
         try {
             OrderPaidEvent payload = objectMapper.readValue(event.getPayload(), OrderPaidEvent.class);
-            rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE, RabbitMQConfig.ORDER_PAID_ROUTING_KEY, payload);
+            publishAndAwaitBrokerConfirm(payload);
             transactionTemplate.executeWithoutResult(status -> {
                 event.markAsSent();
                 outboxEventRepository.save(event);
@@ -44,5 +46,13 @@ public class OutboxEventPublisher {
         } catch (Exception e) {
             log.error("아웃박스 이벤트 발행에 실패했습니다. 다음 스케줄에서 재시도합니다. eventId={}", event.getId(), e);
         }
+    }
+
+    private void publishAndAwaitBrokerConfirm(OrderPaidEvent payload) {
+        rabbitTemplate.invoke(operations -> {
+            operations.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE, RabbitMQConfig.ORDER_PAID_ROUTING_KEY, payload);
+            operations.waitForConfirmsOrDie(PUBLISHER_CONFIRM_TIMEOUT_MILLIS);
+            return null;
+        });
     }
 }
