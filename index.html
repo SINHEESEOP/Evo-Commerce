@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Evo-Commerce</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#f2f3f1;
+    --surface:#ffffff;
+    --surface-2:#eceeec;
+    --ink:#14171a;
+    --sub:#565f66;
+    --faint:#8a929a;
+    --line:#dde0dd;
+    --accent:#b8641a;
+    --accent-ink:#ffffff;
+    --accent-soft:#f2e3d3;
+    --code-bg:#14171a;
+    --code-ink:#e7e2d8;
+    --code-accent:#e0a862;
+    --shadow: 0 1px 2px rgba(20,23,26,.04), 0 8px 24px rgba(20,23,26,.06);
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --bg:#15181b;
+      --surface:#1b1f22;
+      --surface-2:#22262a;
+      --ink:#edefec;
+      --sub:#a4acb1;
+      --faint:#767f85;
+      --line:#2b3034;
+      --accent:#e0a24a;
+      --accent-ink:#1b1200;
+      --accent-soft:#3a2c17;
+      --code-bg:#0f1113;
+      --code-ink:#e7e2d8;
+      --code-accent:#e0a862;
+      --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px rgba(0,0,0,.35);
+    }
+  }
+  :root[data-theme="dark"]{
+    --bg:#15181b;
+    --surface:#1b1f22;
+    --surface-2:#22262a;
+    --ink:#edefec;
+    --sub:#a4acb1;
+    --faint:#767f85;
+    --line:#2b3034;
+    --accent:#e0a24a;
+    --accent-ink:#1b1200;
+    --accent-soft:#3a2c17;
+    --code-bg:#0f1113;
+    --code-ink:#e7e2d8;
+    --code-accent:#e0a862;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 12px 32px rgba(0,0,0,.35);
+  }
+
+  *{box-sizing:border-box;}
+  @page{ size:A4; margin:14mm 16mm; }
+  html{background:var(--bg);}
+  body{
+    margin:0;
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"IBM Plex Sans KR","Apple SD Gothic Neo",sans-serif;
+    -webkit-font-smoothing:antialiased;
+    line-height:1.5;
+  }
+  ::selection{ background:var(--accent-soft); }
+
+  .wrap{ max-width:760px; margin:0 auto; padding:64px 28px 40px; }
+
+  a{ color:inherit; }
+  code, .mono{ font-family:"IBM Plex Mono",ui-monospace,monospace; }
+
+  h1,h2,h3{
+    font-family:"Archivo","IBM Plex Sans KR",sans-serif;
+    font-weight:800;
+    text-wrap:balance;
+    margin:0;
+    letter-spacing:-.01em;
+  }
+
+  /* ---------- header ---------- */
+  header.hero{
+    display:flex; flex-direction:column; gap:18px;
+    padding-bottom:36px; border-bottom:1px solid var(--line);
+  }
+  .eyebrow{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12.5px;
+    letter-spacing:.06em;
+    color:var(--accent);
+    display:flex; align-items:center; gap:8px;
+  }
+  .eyebrow a{ text-decoration:none; border-bottom:1px solid currentColor; }
+  h1.title{ font-size:44px; line-height:1.02; }
+  p.tagline{
+    font-size:17px; color:var(--sub); margin:0;
+  }
+  .meta-row{
+    display:flex; flex-wrap:wrap; gap:8px 10px; margin-top:4px;
+  }
+  .chip{
+    font-family:"IBM Plex Mono",monospace;
+    font-size:12px;
+    padding:5px 10px;
+    border:1px solid var(--line);
+    border-radius:5px;
+    color:var(--sub);
+    background:var(--surface);
+    white-space:nowrap;
+  }
+  .chip.on{ border-color:var(--accent); color:var(--accent); }
+
+  .stat-row{
+    display:grid; grid-template-columns:repeat(3,1fr); gap:1px;
+    background:var(--line);
+    border:1px solid var(--line);
+    border-radius:10px;
+    overflow:hidden;
+    margin-top:8px;
+  }
+  .stat{
+    background:var(--surface);
+    padding:18px 16px;
+    display:flex; flex-direction:column; gap:4px;
+  }
+  .stat .num{
+    font-family:"Archivo",sans-serif; font-weight:800; font-size:30px;
+    font-variant-numeric:tabular-nums; color:var(--accent);
+  }
+  .stat .label{ font-size:12.5px; color:var(--sub); line-height:1.35; }
+
+  /* ---------- overview ---------- */
+  section.overview{ padding:34px 0; border-bottom:1px solid var(--line); }
+  section.overview p{ font-size:15.5px; color:var(--sub); margin:0; }
+  section.overview p + p{ margin-top:12px; }
+  section.overview b{ color:var(--ink); font-weight:600; }
+
+  /* ---------- case studies ---------- */
+  .case{
+    padding:44px 0;
+    border-bottom:1px solid var(--line);
+    break-inside:avoid-page;
+  }
+  .case:last-of-type{ border-bottom:none; }
+  .case-head{ display:flex; flex-direction:column; gap:6px; margin-bottom:22px; }
+  .case-eyebrow{
+    font-family:"IBM Plex Mono",monospace; font-size:12px; letter-spacing:.08em;
+    color:var(--faint); text-transform:uppercase;
+  }
+  .case h2{ font-size:26px; line-height:1.15; }
+  .case-stack{ font-family:"IBM Plex Mono",monospace; font-size:12px; color:var(--sub); margin-top:2px; }
+
+  .block{ margin-top:22px; }
+  .block > .block-label{
+    font-family:"IBM Plex Mono",monospace; font-size:11.5px; letter-spacing:.05em;
+    color:var(--accent); text-transform:uppercase; margin-bottom:9px; font-weight:600;
+  }
+  .block p{ font-size:14.5px; color:var(--sub); line-height:1.65; margin:0 0 8px; }
+  .block p:last-child{ margin-bottom:0; }
+  .block p b{ color:var(--ink); font-weight:600; }
+
+  pre.term{
+    background:var(--code-bg); color:var(--code-ink);
+    border-radius:8px; padding:14px 16px;
+    font-family:"IBM Plex Mono",monospace; font-size:12.5px; line-height:1.6;
+    overflow-x:auto; margin:0;
+    box-shadow:var(--shadow);
+  }
+  pre.term .fail{ color:#e88; }
+  pre.term .ok{ color:var(--code-accent); }
+  pre.term .dim{ color:#8b9299; }
+
+  .alt-list{ display:flex; flex-direction:column; gap:10px; margin-top:2px; }
+  .alt{
+    display:flex; flex-direction:column; gap:7px;
+    padding:13px 16px; background:var(--surface); border:1px solid var(--line); border-radius:8px;
+  }
+  .alt.chosen{ border-color:var(--accent); background:var(--accent-soft); }
+  .alt-head{ display:flex; align-items:baseline; justify-content:space-between; gap:10px; flex-wrap:wrap; }
+  .alt-name{ font-family:"IBM Plex Mono",monospace; font-size:13px; font-weight:600; color:var(--ink); }
+  .alt-name .alt-sub{ font-family:"IBM Plex Mono",monospace; font-size:11.5px; font-weight:400; color:var(--faint); margin-left:6px; }
+  .alt-name .alt-sub::before{ content:"· "; }
+  .alt-badge{ font-family:"IBM Plex Mono",monospace; font-size:11px; font-weight:700; color:var(--accent); white-space:nowrap; }
+  .alt-desc{ font-size:13.5px; color:var(--sub); line-height:1.6; }
+
+  .kv{ display:flex; flex-direction:column; gap:2px; }
+  .kv .k{ font-family:"IBM Plex Mono",monospace; font-size:11.5px; color:var(--faint); }
+  .kv .v{ font-size:14.5px; color:var(--ink); }
+
+  /* result chart (case 1) */
+  .chart-wrap{ margin-top:4px; }
+  .chart-wrap svg{ width:100%; height:auto; display:block; overflow:visible; }
+  .chart-caption{ font-size:12.5px; color:var(--faint); margin-top:8px; }
+
+  /* result table */
+  table.result{ width:100%; border-collapse:collapse; font-size:13.5px; margin-top:4px; }
+  table.result th, table.result td{
+    text-align:left; padding:9px 10px; border-bottom:1px solid var(--line);
+  }
+  table.result th{
+    font-family:"IBM Plex Mono",monospace; font-size:11px; letter-spacing:.04em;
+    color:var(--faint); text-transform:uppercase; font-weight:600;
+  }
+  table.result td.num{ font-variant-numeric:tabular-nums; font-family:"IBM Plex Mono",monospace; }
+  table.result tr.win td{ color:var(--ink); font-weight:600; }
+
+  .callout{
+    border-left:3px solid var(--accent);
+    background:var(--surface-2);
+    padding:12px 16px; border-radius:0 8px 8px 0;
+    font-size:13.5px; color:var(--sub); line-height:1.6;
+  }
+  .callout b{ color:var(--ink); }
+
+  code.inline{
+    background:var(--surface-2); border:1px solid var(--line); border-radius:4px;
+    padding:1px 6px; font-size:.92em; color:var(--ink);
+  }
+
+  /* ---------- footer ---------- */
+  footer{
+    padding:40px 0 8px;
+    display:flex; flex-wrap:wrap; justify-content:space-between; gap:18px;
+    align-items:flex-end;
+  }
+  footer .foot-links{ display:flex; flex-direction:column; gap:6px; }
+  footer a.foot-link{
+    font-family:"IBM Plex Mono",monospace; font-size:13px; text-decoration:none;
+    color:var(--sub); border-bottom:1px solid var(--line);
+  }
+  footer a.foot-link:hover{ color:var(--accent); border-color:var(--accent); }
+  footer .foot-note{ font-size:12px; color:var(--faint); max-width:32ch; text-align:right; }
+
+  @media print{
+    body{ background:#fff; }
+    .wrap{ padding:0; max-width:100%; }
+    .stat{ box-shadow:none; }
+    pre.term{ box-shadow:none; border:1px solid #333; }
+  }
+
+  @media (max-width:640px){
+    .wrap{ padding:40px 18px 32px; }
+    h1.title{ font-size:32px; }
+    .stat-row{ grid-template-columns:1fr; }
+    .alt{ grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="eyebrow">
+      <span>BACKEND ENGINEERING PORTFOLIO</span>
+      <span>·</span>
+      <a href="https://github.com/SINHEESEOP/Evo-Commerce" target="_blank" rel="noopener">github.com/SINHEESEOP/Evo-Commerce</a>
+    </div>
+    <h1 class="title">Evo-Commerce</h1>
+    <p class="tagline">타임세일 같은 순간 트래픽에서 벌어지는 동시성 문제를 직접 만들고, 겪고, 고치는 과정을 기록하는 이커머스 백엔드. 신희섭 · 2026.08 – 현재</p>
+    <div class="meta-row">
+      <span class="chip on">Java 21</span>
+      <span class="chip on">Spring Boot 3.5</span>
+      <span class="chip">MySQL 8 (Master/Slave)</span>
+      <span class="chip">Redis · Redisson</span>
+      <span class="chip">Toss Payments</span>
+      <span class="chip">ArchUnit</span>
+      <span class="chip">Docker Compose</span>
+    </div>
+    <div class="stat-row">
+      <div class="stat">
+        <div class="num">3.5×</div>
+        <div class="label">분산락 도입 전후 동시성 처리 속도 개선</div>
+      </div>
+      <div class="stat">
+        <div class="num">27</div>
+        <div class="label">진단하고 해결·종료(Closed)한 기술 이슈</div>
+      </div>
+      <div class="stat">
+        <div class="num">14</div>
+        <div class="label">근거를 남긴 기술 의사결정 기록</div>
+      </div>
+    </div>
+  </header>
+
+  <section class="overview">
+    <p><b>Evo-Commerce</b>는 타임세일 같은 순간 트래픽 상황에서 실제로 터지는 동시성·정합성 문제를 직접 재현하고 해결한 이커머스 백엔드 프로젝트입니다. Toss Payments 결제 연동, Redis 분산락 기반 타임세일 참여 제어, Master/Slave DB 라우팅, Outbox 패턴 기반 결제-알림 이벤트 처리를 구현했습니다.</p>
+    <p>아래는 그 과정에서 마주친 세 가지 기술적 문제를 <b>문제 상황 → 검토한 대안 → 적용한 해결책 → 결과</b> 순서로 정리한 것입니다. 트러블슈팅 내용을 정리한 상세 기록은 아래 링크에서 확인할 수 있습니다.</p>
+  </section>
+
+  <!-- CASE 1 : CONCURRENCY -->
+  <article class="case">
+    <div class="case-head">
+      <div class="case-eyebrow">Case 01 · Concurrency Control</div>
+      <h2>체크는 통과했는데, 왜 10명 다 참여됐지</h2>
+      <div class="case-stack">TimeSaleParticipation · Redisson RLock · @Version</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">문제 상황</div>
+      <p>선착순 <code class="inline">participantLimit</code>을 초과해 참여 기록이 저장되면 안 됩니다. 참여자 수를 <code class="inline">COUNT</code>로 조회해 상한과 비교한 뒤 저장하는 구조였는데, 상한 3명인 이벤트에 10명이 동시에 참여를 시도하자 매번 10명 전원이 성공했습니다.</p>
+      <pre class="term">$ ./gradlew test --tests "*선착순*"
+
+<span class="fail">동시에_여러_명이_참여해도_선착순_인원_제한을_초과하지_않는다() FAILED</span>
+    org.opentest4j.AssertionFailedError:
+        expected: 3
+<span class="fail">         but was: 10</span></pre>
+    </div>
+
+    <div class="block">
+      <div class="block-label">원인</div>
+      <p><code class="inline">COUNT</code> 조회와 <code class="inline">INSERT</code> 저장이 하나의 원자적 연산으로 묶여 있지 않았습니다 — check-then-act. 트랜잭션의 원자성(내 SQL이 전부 성공하거나 전부 취소됨)과 여러 트랜잭션 사이의 상호 배제(내가 처리하는 동안 남이 못 끼어듦)는 다른 성질이고, 트랜잭션 경계는 후자를 보장하지 않습니다. REPEATABLE READ 아래서 동시에 시작된 10개 트랜잭션 전부가 <code class="inline">count = 0</code>을 보고 상한 검사를 통과했습니다.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label">검토한 대안</div>
+      <div class="alt-list">
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">비관적 락<span class="alt-sub">SELECT FOR UPDATE</span></span></div>
+          <div class="alt-desc">조회 시점에 행을 잠가 접근 자체를 막습니다. 경합이 몰리는 순간엔 확실하지만, 락을 쥔 트랜잭션이 끝날 때까지 나머지가 커넥션을 붙든 채 대기해야 해서 커넥션 풀 고갈 위험으로 기각했습니다.</div>
+        </div>
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">낙관적 락<span class="alt-sub">@Version + 재시도</span></span></div>
+          <div class="alt-desc">평소엔 락 없이 저장 시점에 충돌만 감지해 재시도합니다. 1단계로 적용했지만 재시도 없이는 데드락이 발생했고, 재시도를 붙이면 정합성은 맞아도 롤백·백오프로 느려졌습니다.</div>
+        </div>
+        <div class="alt chosen">
+          <div class="alt-head"><span class="alt-name">Redis 분산락<span class="alt-sub">Redisson RLock</span></span><span class="alt-badge">✓ 채택</span></div>
+          <div class="alt-desc">애플리케이션 레이어에서 이벤트별 락을 걸어 동시 접근 자체를 차단합니다. MySQL은 애초에 동시 쓰기 경합을 겪지 않습니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">적용한 해결책</div>
+      <p>1단계 낙관적 락만 적용하자 10개 트랜잭션의 동시 UPDATE가 InnoDB 행 잠금 순서를 꼬아 데드락을 냈습니다 — 정원 3명 중 1명만 성공했습니다. 2단계로 <code class="inline">@Retryable</code> + 지수 백오프(50ms→500ms)를 추가해 정합성을 맞췄지만, 매 시도마다 새 트랜잭션을 여느라 평균 596ms가 걸렸습니다. 3단계로 이벤트별 락 키(<code class="inline">time-sale:participation-lock:{eventId}</code>)를 쓰는 Redisson 분산락으로 교체했습니다. 락 해제가 커밋보다 먼저 일어나면 다음 스레드가 반영 전 값을 읽으므로, <code class="inline">TransactionTemplate</code>으로 커밋이 끝난 뒤에만 <code class="inline">unlock()</code>하도록 순서를 맞췄습니다. <code class="inline">@Version</code>은 락 오구현 시의 마지막 방어선으로 남겨뒀습니다.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label">결과 — 상한 3명 · 동시 요청 10건, 3회 반복 측정</div>
+      <div class="chart-wrap">
+        <svg viewBox="0 0 700 118" role="img" aria-label="낙관적 락+재시도 596밀리초, Redis 분산락 169밀리초, 약 3.5배 개선">
+          <!-- gridline -->
+          <line x1="180" y1="10" x2="180" y2="108" stroke="var(--line)" stroke-width="1"/>
+          <text x="180" y="8" text-anchor="middle" font-family="IBM Plex Mono, monospace" font-size="10" fill="var(--faint)">0ms</text>
+
+          <text x="0" y="34" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--sub)">낙관적 락 + 재시도</text>
+          <rect x="180" y="20" width="416" height="24" rx="3" fill="var(--faint)" opacity=".55"/>
+          <text x="606" y="37" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="600" fill="var(--ink)">596ms</text>
+
+          <text x="0" y="86" font-family="IBM Plex Mono, monospace" font-size="12" fill="var(--sub)">Redis 분산락</text>
+          <rect x="180" y="72" width="118" height="24" rx="3" fill="var(--accent)"/>
+          <text x="308" y="89" font-family="IBM Plex Mono, monospace" font-size="13" font-weight="700" fill="var(--accent)">169ms</text>
+
+          <line x1="180" y1="10" x2="180" y2="108" stroke="var(--line)" stroke-width="1"/>
+        </svg>
+        <div class="chart-caption">두 전략 모두 정합성은 3/3으로 동일합니다. Redis 분산락이 약 3.5배 빠릅니다 — 낙관적 락+재시도는 10건 전부를 MySQL까지 들여보낸 뒤 대부분을 롤백·백오프시키는 반면, 분산락은 한 번에 한 요청만 임계 구역에 들여보내 MySQL이 애초에 쓰기 경합을 겪지 않습니다.</div>
+      </div>
+    </div>
+
+    <div class="callout"><b>일반화</b> — 정합성을 지키는 전략과 그 전략의 부작용(데드락으로 인한 성공률 저하)은 따로 검증해야 합니다. "예외가 안 난다"가 아니라 "정원 안에서 최대한 많은 요청이 성공하는가"까지 같은 시나리오로 직접 측정해야 진짜 해결 여부를 알 수 있습니다.</div>
+  </article>
+
+  <!-- CASE 2 : IDEMPOTENCY -->
+  <article class="case">
+    <div class="case-head">
+      <div class="case-eyebrow">Case 02 · Payment Idempotency</div>
+      <h2>같은 웹훅이 두 번 오면 벌어지는 일</h2>
+      <div class="case-stack">TossWebhookController · OrderFacade.handlePaymentWebhook</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">문제 상황</div>
+      <p>이미 결제가 완료돼 <code class="inline">PAID</code>인 주문에 같은 결제완료 웹훅이 재전달되면, <code class="inline">order.pay()</code>가 매번 그대로 호출돼 <code class="inline">INVALID_STATUS_TRANSITION</code> 예외로 실패했습니다. Toss는 200이 아닌 응답을 실패로 간주해 계속 재전송하므로, 같은 오류가 끝없이 반복됐습니다.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label">검토한 대안</div>
+      <div class="alt-list">
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">멱등성 키<span class="alt-sub">이벤트 ID 이력 테이블</span></span></div>
+          <div class="alt-desc">이벤트에 고유 ID를 부여하고 처리 이력을 별도 테이블에 기록해 중복 수신을 추적합니다. 웹훅의 부수효과가 여러 개로 늘어날 때 필요해지는 방식입니다.</div>
+        </div>
+        <div class="alt chosen">
+          <div class="alt-head"><span class="alt-name">목표 상태 확인<span class="alt-sub">Order.status 조회</span></span><span class="alt-badge">✓ 채택</span></div>
+          <div class="alt-desc">처리 전에 주문이 이미 목표 상태(PAID)인지 확인해, 같으면 조용히 종료합니다. 지금 웹훅의 유일한 부수효과가 상태 전이뿐이라 별도 이력 테이블 없이도 안전합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">적용한 해결책 &amp; 결과</div>
+      <p><code class="inline">handlePaymentWebhook()</code>이 <code class="inline">order.pay()</code>를 호출하기 전에 <code class="inline">order.getStatus() == PAID</code>인지 먼저 확인하고, 이미 PAID면 그대로 반환하도록 바꿨습니다. 같은 주문에 웹훅을 두 번 처리해도 두 번째 호출은 예외 없이 200으로 끝나는 것을 회귀 테스트로 검증했습니다.</p>
+    </div>
+
+    <div class="callout"><b>스코프 노트</b> — 이미 <code class="inline">CANCELLED</code>인 주문에 결제완료 웹훅이 오는 경우는 이번 수정에 포함하지 않았습니다. 이건 "정상적인 중복 수신"이 아니라 결제와 취소가 경쟁하는 별도의 정합성 문제라 범위 밖으로 명시하고 남겨뒀습니다.</div>
+  </article>
+
+  <!-- CASE 3 : ARCHITECTURE -->
+  <article class="case">
+    <div class="case-head">
+      <div class="case-eyebrow">Case 03 · Architecture Enforcement</div>
+      <h2>패키지를 나눠도 아무도 막아주지 않는다</h2>
+      <div class="case-stack">ArchUnit · PackageArchitectureTest</div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">문제 상황</div>
+      <p>도메인 패키지 내부를 <code class="inline">presentation</code> / <code class="inline">application</code> / <code class="inline">domain</code> 계층으로 나눴는데도, 다른 도메인의 표현 계층이 이 도메인의 도메인 계층을 직접 참조하는 코드가 아무 경고 없이 컴파일됐습니다.</p>
+      <pre class="term">package com.evo.commerce.domain.product.presentation;
+
+<span class="dim">import</span> com.evo.commerce.domain.order.domain.OrderRepository; <span class="dim">// 막고 싶었던 참조</span>
+
+public class ProductController {
+    private final OrderRepository orderRepository; <span class="fail">// 컴파일 에러도, 경고도 없다</span>
+}</pre>
+      <p>Java의 패키지는 이름 규칙일 뿐 접근을 물리적으로 차단하는 장치가 아닙니다. <code class="inline">public class</code>는 어떤 패키지에서든 import할 수 있습니다.</p>
+    </div>
+
+    <div class="block">
+      <div class="block-label">검토한 대안</div>
+      <div class="alt-list">
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">package-private<span class="alt-sub">접근 제한자</span></span></div>
+          <div class="alt-desc">같은 도메인 내부는 허용하고 다른 도메인의 표현 계층만 막는, 세밀한 규칙을 표현할 수 없어 기각했습니다.</div>
+        </div>
+        <div class="alt">
+          <div class="alt-head"><span class="alt-name">멀티모듈 / JPMS<span class="alt-sub">물리적 컴파일 경계</span></span></div>
+          <div class="alt-desc">실수 자체를 원천 차단할 수 있지만, 도메인 4개 규모에 모듈 경계를 새로 설계·유지하는 비용이 이득보다 크다고 판단했습니다.</div>
+        </div>
+        <div class="alt chosen">
+          <div class="alt-head"><span class="alt-name">ArchUnit<span class="alt-sub">테스트 기반 강제</span></span><span class="alt-badge">✓ 채택</span></div>
+          <div class="alt-desc">"이 패키지는 저 패키지에 의존하면 안 된다"를 테스트 코드로 표현합니다. 물리적 구조를 바꾸지 않고도 세밀한 규칙을 표현하고, 위반 시 테스트가 실패합니다.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="block">
+      <div class="block-label">적용한 해결책</div>
+      <p>규칙을 적용하는 과정에서 새 위반을 하나 더 잡았습니다. <code class="inline">@RequireRole(UserRole.MASTER)</code>처럼 도메인 enum을 애너테이션 값으로 받는 것도 "그 타입을 참조하는 것"으로 취급돼, 표현 계층이 다른 도메인의 enum을 import하는 결합이 생겼습니다. <code class="inline">UserRole</code> 대신 <code class="inline">String</code> 값을 받도록 바꿔 결합을 없앴습니다 — Spring Security의 <code class="inline">@PreAuthorize("hasRole('MASTER')")</code>가 enum 대신 문자열을 쓰는 것도 같은 이유입니다.</p>
+    </div>
+
+    <div class="callout"><b>일반화</b> — 폴더 재배치와 "아키텍처 규칙을 강제하는 것"은 서로 다른 문제입니다. 전자는 후자의 필요조건이지 충분조건이 아닙니다. 좋은 제약은 문제를 감추는 대신 드러냅니다 — 규칙이 생기자마자 "이 결합이 정말 필요한가"를 다시 묻게 됐습니다.</div>
+  </article>
+
+  <footer>
+    <div class="foot-links">
+      <a class="foot-link" href="https://github.com/SINHEESEOP/Evo-Commerce" target="_blank" rel="noopener">→ github.com/SINHEESEOP/Evo-Commerce</a>
+      <a class="foot-link" href="https://github.com/SINHEESEOP/Evo-Commerce/wiki" target="_blank" rel="noopener">→ 전체 트러블슈팅 딥다이브 (GitHub Wiki)</a>
+      <a class="foot-link" href="mailto:shfurwnd97@gmail.com">→ shfurwnd97@gmail.com</a>
+    </div>
+    <div class="foot-note">신희섭 · Backend Engineer<br>010-2996-4913</div>
+  </footer>
+
+</div>
+</body>
+</html>
