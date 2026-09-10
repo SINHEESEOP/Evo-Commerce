@@ -25,7 +25,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class NotificationEventListenerTest {
+class OrderPaidMessageListenerTest {
 
     @Mock
     NotificationRepository notificationRepository;
@@ -37,7 +37,7 @@ class NotificationEventListenerTest {
     SseEmitterRegistry sseEmitterRegistry;
 
     @InjectMocks
-    NotificationEventListener notificationEventListener;
+    OrderPaidMessageListener orderPaidMessageListener;
 
     @Test
     void 결제완료_이벤트를_받으면_알림을_저장한다() throws Exception {
@@ -52,7 +52,7 @@ class NotificationEventListenerTest {
         given(userRepository.findById(1L)).willReturn(Optional.of(user));
         given(sseEmitterRegistry.findByUserId(1L)).willReturn(List.of());
 
-        notificationEventListener.handleOrderPaid(event);
+        orderPaidMessageListener.handleOrderPaid(event);
 
         ArgumentCaptor<Notification> captor = ArgumentCaptor.forClass(Notification.class);
         verify(notificationRepository).save(captor.capture());
@@ -66,7 +66,7 @@ class NotificationEventListenerTest {
 
         given(userRepository.findById(999L)).willReturn(Optional.empty());
 
-        assertThatThrownBy(() -> notificationEventListener.handleOrderPaid(event))
+        assertThatThrownBy(() -> orderPaidMessageListener.handleOrderPaid(event))
                 .isInstanceOf(BusinessException.class)
                 .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
     }

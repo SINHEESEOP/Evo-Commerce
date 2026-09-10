@@ -45,6 +45,9 @@ dependencies {
     // 타임세일 참여 동시성 제어를 위한 Redis 분산 락 (Redisson)
     implementation 'org.redisson:redisson:4.7.0'
 
+    // 아웃박스 이벤트를 실제 메시지 브로커로 발행/구독하기 위한 RabbitMQ 연동
+    implementation 'org.springframework.boot:spring-boot-starter-amqp'
+
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
     testCompileOnly 'org.projectlombok:lombok'

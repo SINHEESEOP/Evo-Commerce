@@ -7,7 +7,7 @@ import com.evo.commerce.domain.order.domain.OutboxEventStatus;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -20,7 +20,7 @@ import java.util.List;
 public class OutboxEventPublisher {
 
     private final OutboxEventRepository outboxEventRepository;
-    private final ApplicationEventPublisher eventPublisher;
+    private final RabbitTemplate rabbitTemplate;
     private final ObjectMapper objectMapper;
     private final TransactionTemplate transactionTemplate;
 
@@ -36,8 +36,8 @@ public class OutboxEventPublisher {
     private void dispatch(OutboxEvent event) {
         try {
             OrderPaidEvent payload = objectMapper.readValue(event.getPayload(), OrderPaidEvent.class);
+            rabbitTemplate.convertAndSend(RabbitMQConfig.ORDER_EXCHANGE, RabbitMQConfig.ORDER_PAID_ROUTING_KEY, payload);
             transactionTemplate.executeWithoutResult(status -> {
-                eventPublisher.publishEvent(payload);
                 event.markAsSent();
                 outboxEventRepository.save(event);
             });

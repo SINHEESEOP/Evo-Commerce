@@ -4,13 +4,14 @@ import com.evo.commerce.domain.notification.domain.Notification;
 import com.evo.commerce.domain.notification.domain.NotificationRepository;
 import com.evo.commerce.domain.notification.infrastructure.SseEmitterRegistry;
 import com.evo.commerce.domain.order.domain.OrderPaidEvent;
+import com.evo.commerce.domain.order.infrastructure.RabbitMQConfig;
 import com.evo.commerce.domain.user.domain.User;
 import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.UserErrorCode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
+import org.springframework.amqp.rabbit.annotation.RabbitListener;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -19,13 +20,13 @@ import java.io.IOException;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class NotificationEventListener {
+public class OrderPaidMessageListener {
 
     private final NotificationRepository notificationRepository;
     private final UserRepository userRepository;
     private final SseEmitterRegistry sseEmitterRegistry;
 
-    @EventListener
+    @RabbitListener(queues = RabbitMQConfig.ORDER_PAID_QUEUE)
     public void handleOrderPaid(OrderPaidEvent event) {
         User user = userRepository.findById(event.userId())
                 .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
