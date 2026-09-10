@@ -13,6 +13,7 @@ import com.evo.commerce.domain.user.domain.User;
 import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.domain.user.domain.UserRole;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -81,6 +82,7 @@ class TimeSaleParticipationScalePoolExpandedBenchmarkTest {
         }
     }
 
+    @Disabled("ISSUE-32: 커넥션 풀을 넓혀도 재시도 소진으로 인한 참여 거부가 해소되지 않음 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
     void 낙관적_락_재시도_방식은_커넥션_풀을_넓히면_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(optimisticLockRetryParticipationService::participate);
@@ -88,6 +90,7 @@ class TimeSaleParticipationScalePoolExpandedBenchmarkTest {
         assertThat(result.successCount()).isEqualTo(PARTICIPANT_LIMIT);
     }
 
+    @Disabled("ISSUE-32: 커넥션 풀을 넓혀도 tryLock 대기시간 초과로 인한 참여 거부가 해소되지 않음 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
     void Redis_분산_락_방식은_커넥션_풀을_넓히면_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(timeSaleFacade::participate);

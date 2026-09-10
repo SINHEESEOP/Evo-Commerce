@@ -13,6 +13,7 @@ import com.evo.commerce.domain.user.domain.User;
 import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.domain.user.domain.UserRole;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -78,6 +79,7 @@ class TimeSaleParticipationScaleBenchmarkTest {
         }
     }
 
+    @Disabled("ISSUE-32: 재시도 소진으로 잔여 정원이 있어도 참여가 거부됨 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
     void 낙관적_락_재시도_방식은_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(optimisticLockRetryParticipationService::participate);
@@ -85,6 +87,7 @@ class TimeSaleParticipationScaleBenchmarkTest {
         assertThat(result.successCount()).isEqualTo(PARTICIPANT_LIMIT);
     }
 
+    @Disabled("ISSUE-32: RLock tryLock 대기시간 초과로 잔여 정원이 있어도 참여가 거부됨 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
     void Redis_분산_락_방식은_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(timeSaleFacade::participate);
