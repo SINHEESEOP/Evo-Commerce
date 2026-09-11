@@ -60,7 +60,7 @@ public final class ParticipationLoadRunner {
         readyLatch.await();
         long start = System.currentTimeMillis();
         startLatch.countDown();
-        doneLatch.await(30, TimeUnit.SECONDS);
+        doneLatch.await(120, TimeUnit.SECONDS);
         long elapsedMillis = System.currentTimeMillis() - start;
         executorService.shutdown();
 

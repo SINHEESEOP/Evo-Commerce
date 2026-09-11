@@ -27,17 +27,18 @@ import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newPr
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Step 3.6 벤치마크(정원 3명, 동시 요청 10건 - 기본 HikariCP 풀 크기와 우연히 일치)를
- * 실제 Phase 3 목표 규모(정원 100명)로 올려 재측정한다. 정원과 동시 요청자 수를 같게 맞춰
- * "참여자 전원이 실제로 경쟁하는" 균형 경쟁 상황을 재현한다. 지원자 수가 정원을 훨씬
- * 웃도는 수요 폭증 상황은 {@link TimeSaleParticipationSurgeBenchmarkTest} 참고.
- * HikariCP maximum-pool-size는 application.yaml 기본값(10)을 그대로 둔 채로 측정한다.
+ * TimeSaleParticipationSurgeBenchmarkTest와 같은 시나리오(정원 100명, 지원자 1,000명)를,
+ * HikariCP maximum-pool-size만 20으로 넓혀서 재측정한다. 커넥션 풀을 넉넉하게 늘리는 것만으로
+ * 수요 폭증 상황의 오탐 거부가 해소되는지 비교하기 위한 테스트다.
  */
-@SpringBootTest
-class TimeSaleParticipationScaleBenchmarkTest {
+@SpringBootTest(properties = {
+        "spring.datasource.master.hikari.maximum-pool-size=20",
+        "spring.datasource.slave.hikari.maximum-pool-size=20"
+})
+class TimeSaleParticipationSurgePoolExpandedBenchmarkTest {
 
     private static final int PARTICIPANT_LIMIT = 100;
-    private static final int CONCURRENT_USERS = 100;
+    private static final int CONCURRENT_USERS = 1000;
 
     @Autowired
     TimeSaleFacade timeSaleFacade;
@@ -81,17 +82,16 @@ class TimeSaleParticipationScaleBenchmarkTest {
         }
     }
 
-    @Disabled("ISSUE-32: 재시도 소진으로 잔여 정원이 있어도 참여가 거부됨 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
-    void 낙관적_락_재시도_방식은_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
+    void 낙관적_락_재시도_방식은_커넥션_풀을_넓히면_지원자가_정원보다_훨씬_많아도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(optimisticLockRetryParticipationService::participate);
 
         assertThat(result.successCount()).isEqualTo(PARTICIPANT_LIMIT);
     }
 
-    @Disabled("ISSUE-32: RLock tryLock 대기시간 초과로 잔여 정원이 있어도 참여가 거부됨 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
+    @Disabled("ISSUE-32: 커넥션 풀을 넓혀도 tryLock 대기시간 초과로 정원의 극히 일부만 채워짐 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
-    void Redis_분산_락_방식은_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
+    void Redis_분산_락_방식은_커넥션_풀을_넓히면_지원자가_정원보다_훨씬_많아도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(timeSaleFacade::participate);
 
         assertThat(result.successCount()).isEqualTo(PARTICIPANT_LIMIT);
@@ -114,7 +114,7 @@ class TimeSaleParticipationScaleBenchmarkTest {
 
         userIds = IntStream.range(0, CONCURRENT_USERS)
                 .mapToObj(i -> userRepository.save(User.builder()
-                        .email("timesale-scale-" + System.nanoTime() + "-" + i + "@evo-commerce.com")
+                        .email("timesale-surge-pool20-" + System.nanoTime() + "-" + i + "@evo-commerce.com")
                         .password("plain1234!")
                         .name("테스터" + i)
                         .role(UserRole.USER)
