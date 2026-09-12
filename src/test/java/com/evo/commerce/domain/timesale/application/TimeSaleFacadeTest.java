@@ -84,6 +84,27 @@ class TimeSaleFacadeTest {
     }
 
     @Test
+    void 아웃박스_저장에_실패하면_Redis_예약을_되돌리고_일시적_오류를_반환한다() {
+        LocalDateTime now = LocalDateTime.now();
+        TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
+
+        given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
+        lenient().when(redissonClient.getScript(ArgumentMatchers.any(StringCodec.class))).thenReturn(rScript);
+        given(rScript.<Long>eval(ArgumentMatchers.any(), ArgumentMatchers.anyString(), ArgumentMatchers.any(),
+                ArgumentMatchers.anyList(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+                .willReturn(event.getParticipantLimit() - 1L);
+        given(outboxEventRepository.save(ArgumentMatchers.any()))
+                .willThrow(new IllegalStateException("DB 장애(테스트)"));
+
+        assertThatThrownBy(() -> timeSaleFacade.participate(1L, 1L))
+                .isInstanceOf(BusinessException.class)
+                .hasFieldOrPropertyWithValue("errorCode", TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+
+        verify(rScript).eval(ArgumentMatchers.any(), ArgumentMatchers.anyString(), ArgumentMatchers.any(),
+                ArgumentMatchers.anyList(), ArgumentMatchers.any());
+    }
+
+    @Test
     void 존재하지_않는_이벤트에_참여하면_예외가_발생한다() {
         given(timeSaleEventRepository.findById(999L)).willReturn(Optional.empty());
 

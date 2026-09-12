@@ -18,6 +18,7 @@ import com.evo.commerce.global.exception.TimeSaleErrorCode;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
 import org.redisson.client.codec.StringCodec;
@@ -27,6 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TimeSaleFacade {
@@ -58,6 +60,18 @@ public class TimeSaleFacade {
             redis.call('DECR', KEYS[1])
             redis.call('SADD', KEYS[2], ARGV[1])
             return remaining - 1
+            """;
+
+    /**
+     * KEYS[1] = 잔여 수량 키, KEYS[2] = 참여자 집합 키, ARGV[1] = 참여자 userId.
+     * reserveParticipation()이 Redis에 이미 커밋한 차감을 되돌리는 보상 스크립트.
+     * 예약 확정 자체는 Redis 안에서 끝나므로, 그 뒤에 이어지는 아웃박스 기록이 실패했을 때
+     * Redis 쪽 상태를 원래대로 되돌릴 책임은 이 스크립트 말고는 아무도 지지 않는다.
+     */
+    private static final String RELEASE_SCRIPT = """
+            redis.call('SREM', KEYS[2], ARGV[1])
+            redis.call('INCR', KEYS[1])
+            return 1
             """;
 
     private final TimeSaleEventRepository timeSaleEventRepository;
@@ -113,7 +127,13 @@ public class TimeSaleFacade {
             throw new BusinessException(TimeSaleErrorCode.PARTICIPANT_LIMIT_EXCEEDED);
         }
 
-        publishParticipationRequested(eventId, userId);
+        try {
+            publishParticipationRequested(eventId, userId);
+        } catch (RuntimeException e) {
+            releaseParticipation(event, userId);
+            log.error("참여 요청을 아웃박스에 기록하지 못해 Redis 예약을 되돌렸습니다. eventId={}, userId={}", eventId, userId, e);
+            throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+        }
 
         return new TimeSaleParticipationResponse(null, null, eventId);
     }
@@ -127,6 +147,16 @@ public class TimeSaleFacade {
                 List.of(remainingKey(event.getId()), participantsKey(event.getId())),
                 userId.toString(),
                 String.valueOf(event.getParticipantLimit()));
+    }
+
+    private void releaseParticipation(TimeSaleEvent event, Long userId) {
+        RScript script = redissonClient.getScript(StringCodec.INSTANCE);
+        script.eval(
+                RScript.Mode.READ_WRITE,
+                RELEASE_SCRIPT,
+                RScript.ReturnType.LONG,
+                List.of(remainingKey(event.getId()), participantsKey(event.getId())),
+                userId.toString());
     }
 
     private void publishParticipationRequested(Long eventId, Long userId) {

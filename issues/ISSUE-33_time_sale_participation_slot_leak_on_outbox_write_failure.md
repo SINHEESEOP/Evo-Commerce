@@ -35,10 +35,22 @@
 - **ISSUE-32와의 연결고리.** ISSUE-32에서 다룬 "HikariCP 풀 고갈로 인한 오탐 거부"는 이번 설계에서 참여 확정 자체의 거부 원인은 되지 않지만(참여 확정은 Redis 안에서 끝나므로), 그 직후의 아웃박스 INSERT 한 번은 여전히 DB 커넥션을 필요로 한다. 즉 이 결함은 "커넥션 풀이 순간적으로라도 고갈되는 모든 상황"에서 조용히 슬롯을 영구히 잃는 형태로 재발한다.
 
 ### 상태
-`[OPEN]`
+`[CLOSED]`
 
 ### 원인 분석
-(해결 시 작성 예정)
+`participate()`는 업무 행위(잔여 수량 차감·중복 참여 확인)를 Redis Lua 스크립트로 이미 확정한 뒤, 그 사실을 DB 아웃박스에 기록하는 별도의 독립적인 쓰기(`outboxEventRepository.save(...)`)를 실행한다. 이 두 단계는 서로 다른 시스템, 서로 다른 트랜잭션 경계에 걸쳐 있어 하나로 묶는 원자성이 없다. 아웃박스 쓰기가 실패해도 Redis 쪽에서 이미 커밋된 차감과 중복 등록을 되돌리는 코드가 없었기 때문에, 실패 시점에 참여 슬롯 하나가 어떤 주문·참여 기록도 남기지 못한 채 영구히 사라지고 해당 사용자는 재시도조차 할 수 없었다.
 
 ### 해결 방안
-(해결 시 작성 예정)
+아웃박스 저장을 `try-catch`로 감싸고, 실패 시 방금 Redis에 확정했던 차감·중복 등록을 되돌리는 보상(compensating) Lua 스크립트를 실행한 뒤 `PARTICIPATION_TEMPORARILY_UNAVAILABLE`을 반환하도록 했다.
+
+```java
+try {
+    publishParticipationRequested(eventId, userId);
+} catch (RuntimeException e) {
+    releaseParticipation(event, userId);
+    log.error("참여 요청을 아웃박스에 기록하지 못해 Redis 예약을 되돌렸습니다. eventId={}, userId={}", eventId, userId, e);
+    throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
+}
+```
+
+보상 스크립트는 참여자 집합에서 사용자를 제거하고 잔여 수량을 원복하는 두 연산을 하나의 Lua 스크립트로 묶어 실행한다. 실제 DB 장애 상황을 흉내 내 검증한 결과, 실패 직후 Redis의 잔여 수량과 참여자 집합이 정확히 원래 상태로 복구됐고, 이후 같은 사용자가 재시도했을 때 정상적으로 참여에 성공하는 것을 확인했다. 재시도가 아니라 보상을 택한 이유는 [`docs/decisions/016_time_sale_participation_compensation.md`](../docs/decisions/016_time_sale_participation_compensation.md) 참고.
