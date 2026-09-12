@@ -18,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -25,6 +26,7 @@ import java.util.stream.IntStream;
 
 import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newProduct;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
  * Step 3.6 벤치마크(정원 3명, 동시 요청 10건 - 기본 HikariCP 풀 크기와 우연히 일치)를
@@ -89,9 +91,8 @@ class TimeSaleParticipationScaleBenchmarkTest {
         assertThat(result.successCount()).isEqualTo(PARTICIPANT_LIMIT);
     }
 
-    @Disabled("ISSUE-32: RLock tryLock 대기시간 초과로 잔여 정원이 있어도 참여가 거부됨 - 3.11 원자적 Redis 연산 재설계 후 재활성화 예정")
     @Test
-    void Redis_분산_락_방식은_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
+    void Redis_원자적_연산_방식은_동시_참여자가_많아져도_정원까지는_모두_성공한다() throws InterruptedException {
         ParticipationLoadRunner.Result result = runScenario(timeSaleFacade::participate);
 
         assertThat(result.successCount()).isEqualTo(PARTICIPANT_LIMIT);
@@ -121,6 +122,13 @@ class TimeSaleParticipationScaleBenchmarkTest {
                         .build()).getId())
                 .toList();
 
-        return ParticipationLoadRunner.run(userIds, eventId, participate);
+        ParticipationLoadRunner.Result result = ParticipationLoadRunner.run(userIds, eventId, participate);
+
+        // 아웃박스+RabbitMQ 경로로 참여를 기록하는 방식(Redis 원자적 연산)은 정원 도달 여부를
+        // 요청 스레드에서 곧바로 확인할 수 없으므로, 정리(cleanUp) 전에 실제 저장이 끝나길 기다린다.
+        await().atMost(Duration.ofSeconds(60)).untilAsserted(() ->
+                assertThat(timeSaleParticipationRepository.countByTimeSaleEvent(event)).isEqualTo(result.successCount()));
+
+        return result;
     }
 }
