@@ -79,7 +79,8 @@
         const participateBody = await participateResponse.json();
 
         if (participateResponse.ok && participateBody.success) {
-            window.location.href = `/templates/payment/checkout.html?orderId=${participateBody.data.orderId}`;
+            result.textContent = '참여가 접수되었습니다. 주문은 잠시 후 순차적으로 처리됩니다.';
+            result.classList.remove('error');
         } else {
             result.textContent = `참여 실패: ${participateBody.message}`;
             result.classList.add('error');
