@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
@@ -27,6 +28,7 @@ import java.util.stream.IntStream;
 
 import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newProduct;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 @SpringBootTest
 class TimeSaleParticipationConcurrencyTest {
@@ -124,9 +126,11 @@ class TimeSaleParticipationConcurrencyTest {
         doneLatch.await(10, TimeUnit.SECONDS);
         executorService.shutdown();
 
-        long finalParticipantCount = timeSaleParticipationRepository.countByTimeSaleEvent(event);
-
         assertThat(successCount.get()).isEqualTo(PARTICIPANT_LIMIT);
-        assertThat(finalParticipantCount).isEqualTo(PARTICIPANT_LIMIT);
+
+        // Order/Participation 저장은 아웃박스+RabbitMQ를 통해 비동기로 처리되므로,
+        // 참여 응답이 돌아온 직후가 아니라 최종적으로(eventually) 정원만큼 쌓일 때까지 기다려야 한다.
+        await().atMost(Duration.ofSeconds(20)).untilAsserted(() ->
+                assertThat(timeSaleParticipationRepository.countByTimeSaleEvent(event)).isEqualTo(PARTICIPANT_LIMIT));
     }
 }

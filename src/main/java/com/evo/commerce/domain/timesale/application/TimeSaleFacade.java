@@ -1,49 +1,70 @@
 package com.evo.commerce.domain.timesale.application;
 
-import com.evo.commerce.domain.order.domain.Order;
-import com.evo.commerce.domain.order.domain.OrderItem;
-import com.evo.commerce.domain.order.domain.OrderRepository;
+import com.evo.commerce.domain.order.domain.OutboxEvent;
+import com.evo.commerce.domain.order.domain.OutboxEventRepository;
+import com.evo.commerce.domain.order.domain.OutboxEventStatus;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductRepository;
 import com.evo.commerce.domain.timesale.domain.TimeSaleEvent;
 import com.evo.commerce.domain.timesale.domain.TimeSaleEventRepository;
 import com.evo.commerce.domain.timesale.domain.TimeSaleMapper;
-import com.evo.commerce.domain.timesale.domain.TimeSaleParticipation;
-import com.evo.commerce.domain.timesale.domain.TimeSaleParticipationRepository;
+import com.evo.commerce.domain.timesale.domain.TimeSaleParticipationRequestedEvent;
 import com.evo.commerce.domain.timesale.dto.TimeSaleEventCreateRequest;
 import com.evo.commerce.domain.timesale.dto.TimeSaleEventResponse;
 import com.evo.commerce.domain.timesale.dto.TimeSaleParticipationResponse;
-import com.evo.commerce.domain.user.domain.User;
-import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.TimeSaleErrorCode;
-import com.evo.commerce.global.exception.UserErrorCode;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
-import org.redisson.api.RLock;
+import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
+import org.redisson.client.codec.StringCodec;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.concurrent.TimeUnit;
 
 @Service
 @RequiredArgsConstructor
 public class TimeSaleFacade {
 
-    private static final String PARTICIPATION_LOCK_KEY_PREFIX = "time-sale:participation-lock:";
-    private static final long LOCK_WAIT_MILLIS = 200;
+    private static final String REMAINING_KEY_PREFIX = "time-sale:remaining:";
+    private static final String PARTICIPANTS_KEY_PREFIX = "time-sale:participants:";
+    private static final String PARTICIPATION_REQUESTED_EVENT_TYPE = "TIME_SALE_PARTICIPATION_REQUESTED";
+
+    private static final long ALREADY_PARTICIPATED_CODE = -1L;
+    private static final long SOLD_OUT_CODE = -2L;
+
+    /**
+     * KEYS[1] = 잔여 수량 키, KEYS[2] = 참여자 집합 키, ARGV[1] = 참여자 userId, ARGV[2] = 참여 정원.
+     * 중복 참여 확인과 잔여 수량 확인, 차감을 하나의 Lua 스크립트 안에서 처리해 원자성을 보장한다 —
+     * Redis는 스크립트 실행 도중 다른 명령을 끼워 넣지 않으므로, 두 스레드가 동시에 이 스크립트를
+     * 실행해도 항상 한쪽이 완전히 끝난 뒤 다른 쪽이 시작된다.
+     */
+    private static final String PARTICIPATION_SCRIPT = """
+            if redis.call('EXISTS', KEYS[1]) == 0 then
+                redis.call('SET', KEYS[1], ARGV[2])
+            end
+            if redis.call('SISMEMBER', KEYS[2], ARGV[1]) == 1 then
+                return -1
+            end
+            local remaining = tonumber(redis.call('GET', KEYS[1]))
+            if remaining <= 0 then
+                return -2
+            end
+            redis.call('DECR', KEYS[1])
+            redis.call('SADD', KEYS[2], ARGV[1])
+            return remaining - 1
+            """;
 
     private final TimeSaleEventRepository timeSaleEventRepository;
-    private final TimeSaleParticipationRepository timeSaleParticipationRepository;
     private final ProductRepository productRepository;
-    private final UserRepository userRepository;
-    private final OrderRepository orderRepository;
-    private final TransactionTemplate transactionTemplate;
+    private final OutboxEventRepository outboxEventRepository;
     private final RedissonClient redissonClient;
+    private final ObjectMapper objectMapper;
 
     @Transactional
     public TimeSaleEventResponse createEvent(TimeSaleEventCreateRequest request) {
@@ -75,68 +96,62 @@ public class TimeSaleFacade {
     }
 
     /**
-     * 락 해제는 반드시 트랜잭션 커밋 이후여야 한다 — {@code @Transactional}을 이 메서드에 직접 걸면
-     * 프록시가 메서드 반환 후에야 커밋하므로, {@code finally}의 {@code unlock()}이 커밋보다 먼저
-     * 실행되어 다음 스레드가 아직 반영되지 않은(커밋 전) 값을 읽어버린다. {@link TransactionTemplate}으로
-     * 트랜잭션을 명시적으로 열고 그 실행이 끝난(=커밋된) 뒤에 락을 반납하는 이유다.
-     * <p>
-     * {@code leaseTime}을 직접 넘기지 않고 {@link RLock#tryLock(long, TimeUnit)}을 쓰는 이유도 같은 맥락이다 —
-     * 고정된 {@code leaseTime}은 트랜잭션이 그 안에 반드시 끝난다는 가정에 의존하는데, 그 가정이 깨지면
-     * (GC 정지, 느린 쿼리 등으로 트랜잭션이 예상보다 오래 걸리면) Redis가 락을 조기에 만료시켜 버려
-     * 아직 임계 구역 안에 있는 스레드가 있는데도 다른 스레드가 같은 락을 획득하는 사고로 이어진다.
-     * {@code leaseTime}을 생략하면 Redisson의 락 워치독(watchdog)이 이 스레드가 살아있는 동안
-     * 백그라운드에서 주기적으로 TTL을 갱신해 주므로, 트랜잭션이 얼마나 오래 걸리든 조기 해제되지 않는다.
+     * 잔여 수량 확인, 중복 참여 확인, 차감을 Redis Lua 스크립트로 원자적으로 처리하므로
+     * 더 이상 Redisson 분산 락이 필요 없다. 실제 Order/TimeSaleParticipation 생성은
+     * 요청 스레드에서 곧바로 하지 않고, 아웃박스에 참여 사실만 기록한 뒤 비동기로 처리한다.
      */
     public TimeSaleParticipationResponse participate(Long userId, Long eventId) {
-        RLock lock = redissonClient.getLock(PARTICIPATION_LOCK_KEY_PREFIX + eventId);
-
-        boolean acquired;
-        try {
-            acquired = lock.tryLock(LOCK_WAIT_MILLIS, TimeUnit.MILLISECONDS);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
-        }
-        if (!acquired) {
-            throw new BusinessException(TimeSaleErrorCode.PARTICIPATION_TEMPORARILY_UNAVAILABLE);
-        }
-
-        try {
-            return transactionTemplate.execute(status -> participateInNewTransaction(userId, eventId));
-        } finally {
-            lock.unlock();
-        }
-    }
-
-    private TimeSaleParticipationResponse participateInNewTransaction(Long userId, Long eventId) {
         TimeSaleEvent event = findEventOrThrow(eventId);
         event.validateInProgress(LocalDateTime.now());
 
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new BusinessException(UserErrorCode.USER_NOT_FOUND));
+        long result = reserveParticipation(event, userId);
 
-        if (timeSaleParticipationRepository.existsByTimeSaleEventAndUser(event, user)) {
+        if (result == ALREADY_PARTICIPATED_CODE) {
             throw new BusinessException(TimeSaleErrorCode.ALREADY_PARTICIPATED);
         }
+        if (result == SOLD_OUT_CODE) {
+            throw new BusinessException(TimeSaleErrorCode.PARTICIPANT_LIMIT_EXCEEDED);
+        }
 
-        event.increaseParticipant();
+        publishParticipationRequested(eventId, userId);
 
-        Order order = Order.builder().user(user).build();
-        order.addItem(OrderItem.builder()
-                .product(event.getProduct())
-                .quantity(1)
-                .unitPrice(event.getDiscountPrice())
+        return new TimeSaleParticipationResponse(null, null, eventId);
+    }
+
+    private long reserveParticipation(TimeSaleEvent event, Long userId) {
+        RScript script = redissonClient.getScript(StringCodec.INSTANCE);
+        return script.eval(
+                RScript.Mode.READ_WRITE,
+                PARTICIPATION_SCRIPT,
+                RScript.ReturnType.LONG,
+                List.of(remainingKey(event.getId()), participantsKey(event.getId())),
+                userId.toString(),
+                String.valueOf(event.getParticipantLimit()));
+    }
+
+    private void publishParticipationRequested(Long eventId, Long userId) {
+        TimeSaleParticipationRequestedEvent event = new TimeSaleParticipationRequestedEvent(eventId, userId);
+        outboxEventRepository.save(OutboxEvent.builder()
+                .eventType(PARTICIPATION_REQUESTED_EVENT_TYPE)
+                .payload(toPayload(event))
+                .status(OutboxEventStatus.PENDING)
                 .build());
+    }
 
-        Order savedOrder = orderRepository.save(order);
+    private String toPayload(Object event) {
+        try {
+            return objectMapper.writeValueAsString(event);
+        } catch (JsonProcessingException e) {
+            throw new IllegalStateException("이벤트 직렬화에 실패했습니다.", e);
+        }
+    }
 
-        TimeSaleParticipation participation = timeSaleParticipationRepository.save(TimeSaleParticipation.builder()
-                .timeSaleEvent(event)
-                .user(user)
-                .order(savedOrder)
-                .build());
+    private String remainingKey(Long eventId) {
+        return REMAINING_KEY_PREFIX + eventId;
+    }
 
-        return new TimeSaleParticipationResponse(participation.getId(), savedOrder.getId(), event.getId());
+    private String participantsKey(Long eventId) {
+        return PARTICIPANTS_KEY_PREFIX + eventId;
     }
 
     private TimeSaleEvent findEventOrThrow(Long eventId) {

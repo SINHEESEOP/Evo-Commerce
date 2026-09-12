@@ -1,40 +1,34 @@
 package com.evo.commerce.domain.timesale.application;
 
-import com.evo.commerce.domain.order.domain.OrderRepository;
+import com.evo.commerce.domain.order.domain.OutboxEvent;
+import com.evo.commerce.domain.order.domain.OutboxEventRepository;
 import com.evo.commerce.domain.product.domain.Product;
 import com.evo.commerce.domain.product.domain.ProductRepository;
 import com.evo.commerce.domain.timesale.domain.TimeSaleEvent;
 import com.evo.commerce.domain.timesale.domain.TimeSaleEventRepository;
-import com.evo.commerce.domain.timesale.domain.TimeSaleParticipation;
-import com.evo.commerce.domain.timesale.domain.TimeSaleParticipationRepository;
 import com.evo.commerce.domain.timesale.dto.TimeSaleEventCreateRequest;
 import com.evo.commerce.domain.timesale.dto.TimeSaleEventResponse;
 import com.evo.commerce.domain.timesale.dto.TimeSaleParticipationResponse;
-import com.evo.commerce.domain.user.domain.User;
-import com.evo.commerce.domain.user.domain.UserRepository;
 import com.evo.commerce.global.exception.BusinessException;
 import com.evo.commerce.global.exception.ProductErrorCode;
 import com.evo.commerce.global.exception.TimeSaleErrorCode;
-import com.evo.commerce.global.exception.UserErrorCode;
-import org.junit.jupiter.api.BeforeEach;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentMatchers;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.redisson.api.RLock;
+import org.redisson.api.RScript;
 import org.redisson.api.RedissonClient;
-import org.springframework.transaction.support.TransactionCallback;
-import org.springframework.transaction.support.TransactionTemplate;
+import org.redisson.client.codec.StringCodec;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.TimeUnit;
 
-import static com.evo.commerce.domain.order.domain.OrderTestFixtures.newUser;
 import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newEvent;
 import static com.evo.commerce.domain.timesale.domain.TimeSaleTestFixtures.newProduct;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,63 +44,43 @@ class TimeSaleFacadeTest {
     TimeSaleEventRepository timeSaleEventRepository;
 
     @Mock
-    TimeSaleParticipationRepository timeSaleParticipationRepository;
-
-    @Mock
     ProductRepository productRepository;
 
     @Mock
-    UserRepository userRepository;
-
-    @Mock
-    OrderRepository orderRepository;
-
-    @Mock
-    TransactionTemplate transactionTemplate;
+    OutboxEventRepository outboxEventRepository;
 
     @Mock
     RedissonClient redissonClient;
 
     @Mock
-    RLock lock;
+    RScript rScript;
+
+    @Spy
+    ObjectMapper objectMapper = new ObjectMapper();
 
     @InjectMocks
     TimeSaleFacade timeSaleFacade;
 
-    @BeforeEach
-    void setUpTransactionTemplate() throws InterruptedException {
-        lenient().when(transactionTemplate.execute(ArgumentMatchers.any())).thenAnswer(invocation -> {
-            TransactionCallback<?> callback = invocation.getArgument(0);
-            return callback.doInTransaction(null);
-        });
-        lenient().when(redissonClient.getLock(ArgumentMatchers.anyString())).thenReturn(lock);
-        lenient().when(lock.tryLock(ArgumentMatchers.anyLong(), ArgumentMatchers.any(TimeUnit.class)))
-                .thenReturn(true);
-    }
-
     @Test
-    void 진행_중인_이벤트에_참여하면_할인가로_주문이_생성되고_참여_기록이_저장된다() {
+    void 진행_중인_이벤트에_참여하면_참여_요청이_아웃박스에_기록된다() {
         LocalDateTime now = LocalDateTime.now();
-        Product product = newProduct();
-        TimeSaleEvent event = newEvent(product, now.minusMinutes(10), now.plusMinutes(10));
-        User user = newUser();
+        TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
 
         given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(timeSaleParticipationRepository.existsByTimeSaleEventAndUser(event, user)).willReturn(false);
-        given(orderRepository.save(ArgumentMatchers.any())).willAnswer(invocation -> invocation.getArgument(0));
-        given(timeSaleParticipationRepository.save(ArgumentMatchers.any())).willAnswer(invocation -> invocation.getArgument(0));
+        lenient().when(redissonClient.getScript(ArgumentMatchers.any(StringCodec.class))).thenReturn(rScript);
+        given(rScript.<Long>eval(ArgumentMatchers.any(), ArgumentMatchers.anyString(), ArgumentMatchers.any(),
+                ArgumentMatchers.anyList(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+                .willReturn(event.getParticipantLimit() - 1L);
+        given(outboxEventRepository.save(ArgumentMatchers.any())).willAnswer(invocation -> invocation.getArgument(0));
 
         TimeSaleParticipationResponse response = timeSaleFacade.participate(1L, 1L);
 
-        assertThat(response).isNotNull();
+        assertThat(response.timeSaleEventId()).isEqualTo(1L);
 
-        ArgumentCaptor<TimeSaleParticipation> captor = ArgumentCaptor.forClass(TimeSaleParticipation.class);
-        verify(timeSaleParticipationRepository).save(captor.capture());
-        TimeSaleParticipation savedParticipation = captor.getValue();
-        assertThat(savedParticipation.getUser()).isEqualTo(user);
-        assertThat(savedParticipation.getTimeSaleEvent()).isEqualTo(event);
-        assertThat(savedParticipation.getOrder().getOrderItems().get(0).getProductSnapshot().unitPrice()).isEqualTo(59000);
+        ArgumentCaptor<OutboxEvent> captor = ArgumentCaptor.forClass(OutboxEvent.class);
+        verify(outboxEventRepository).save(captor.capture());
+        assertThat(captor.getValue().getEventType()).isEqualTo("TIME_SALE_PARTICIPATION_REQUESTED");
+        assertThat(captor.getValue().getPayload()).contains("\"eventId\":1").contains("\"userId\":1");
     }
 
     @Test
@@ -146,11 +120,12 @@ class TimeSaleFacadeTest {
     void 이미_참여한_이벤트에_다시_참여하면_예외가_발생한다() {
         LocalDateTime now = LocalDateTime.now();
         TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
-        User user = newUser();
 
         given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(timeSaleParticipationRepository.existsByTimeSaleEventAndUser(event, user)).willReturn(true);
+        lenient().when(redissonClient.getScript(ArgumentMatchers.any(StringCodec.class))).thenReturn(rScript);
+        given(rScript.<Long>eval(ArgumentMatchers.any(), ArgumentMatchers.anyString(), ArgumentMatchers.any(),
+                ArgumentMatchers.anyList(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+                .willReturn(-1L);
 
         assertThatThrownBy(() -> timeSaleFacade.participate(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -161,14 +136,12 @@ class TimeSaleFacadeTest {
     void 선착순_인원이_모두_찼으면_예외가_발생한다() {
         LocalDateTime now = LocalDateTime.now();
         TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
-        User user = newUser();
-        for (int i = 0; i < event.getParticipantLimit(); i++) {
-            event.increaseParticipant();
-        }
 
         given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
-        given(userRepository.findById(1L)).willReturn(Optional.of(user));
-        given(timeSaleParticipationRepository.existsByTimeSaleEventAndUser(event, user)).willReturn(false);
+        lenient().when(redissonClient.getScript(ArgumentMatchers.any(StringCodec.class))).thenReturn(rScript);
+        given(rScript.<Long>eval(ArgumentMatchers.any(), ArgumentMatchers.anyString(), ArgumentMatchers.any(),
+                ArgumentMatchers.anyList(), ArgumentMatchers.any(), ArgumentMatchers.any()))
+                .willReturn(-2L);
 
         assertThatThrownBy(() -> timeSaleFacade.participate(1L, 1L))
                 .isInstanceOf(BusinessException.class)
@@ -219,18 +192,5 @@ class TimeSaleFacadeTest {
 
         assertThat(responses).hasSize(1);
         assertThat(responses.get(0).currentParticipants()).isEqualTo(7);
-    }
-
-    @Test
-    void 존재하지_않는_사용자로_참여하면_예외가_발생한다() {
-        LocalDateTime now = LocalDateTime.now();
-        TimeSaleEvent event = newEvent(newProduct(), now.minusMinutes(10), now.plusMinutes(10));
-
-        given(timeSaleEventRepository.findById(1L)).willReturn(Optional.of(event));
-        given(userRepository.findById(999L)).willReturn(Optional.empty());
-
-        assertThatThrownBy(() -> timeSaleFacade.participate(999L, 1L))
-                .isInstanceOf(BusinessException.class)
-                .hasFieldOrPropertyWithValue("errorCode", UserErrorCode.USER_NOT_FOUND);
     }
 }
